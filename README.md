@@ -5,6 +5,8 @@ and user interface to carry out taking retinal images to be processed in the clo
 ## Project Structure:
 
 retinai-kiosk-firmware/
+```
+.
 │
 ├── src/
 │   ├── vision/
@@ -23,3 +25,4 @@ retinai-kiosk-firmware/
 ├── README.md                       # Overview of the project
 ├── .gitignore
 └── requirements.txt                # Dependencies
+```
