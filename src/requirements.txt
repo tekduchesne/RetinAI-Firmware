@@ -1,0 +1,4 @@
+picamera2
+tkinter
+datetime
+time
