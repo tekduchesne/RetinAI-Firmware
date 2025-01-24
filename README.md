@@ -6,8 +6,6 @@ and user interface to carry out taking retinal images to be processed in the clo
 
 retinai-kiosk-firmware/
 ```
-.
-│
 ├── src/
 │   ├── vision/
 │   │   ├── camera_impl.py          # Functions to control Arducam
