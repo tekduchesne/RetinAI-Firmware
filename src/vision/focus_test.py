@@ -1,49 +1,87 @@
+import cv2
+import numpy as np
 import os
 import time
 import sys
-import threading
-import pygame,sys
-from pygame.locals import *
-from time import ctime, sleep
+import smbus
+from picamera2 import Picamera2
 
-pygame.init()
-screen=pygame.display.set_mode((320,240),0,32)
-pygame.key.set_repeat(100)
+# Initialize I2C bus (use 1 for Raspberry Pi 5)
+bus = smbus.SMBus(1)
 
-def runFocus(func):
-    temp_val = 512
-    while True:
-        for event in pygame.event.get():
-            if event.type == KEYDOWN:
-                print(temp_val)
-                if event.key == K_UP:
-                    print('UP')
-                    if temp_val < 1000:
-                        temp_val += 10
-                    else:
-                        temp_val = temp_val
-                    value = (temp_val << 4) & 0x3ff0
-                    dat1 = (value >> 8) & 0x3f
-                    dat2 = value & 0xf0
+def focusing(val):
+    value = (val << 4) & 0x3FF0
+    data1 = (value >> 8) & 0x3F
+    data2 = value & 0xF0
 
-                    os.system("i2cset -y 0 0x0c %d %d" % (dat1, dat2))
-                elif event.key == K_DOWN:
-                    print('DOWN')
-                    if temp_val < 12:
-                        temp_val = temp_val
-                    else:
-                        temp_val -= 10
-                    value = (temp_val << 4) & 0x3ff0
-                    dat1 = (value >> 8) & 0x3f
-                    dat2 = value & 0xf0
-                    os.system("i2cset -y 0 0x0c %d %d" % (dat1, dat2))
+    print(f"Setting focus: {val}")
+    bus.write_byte_data(0x0C, data1, data2)  # Directly send via SMBus
 
-def runCamera():
-    cmd = "sudo raspistill -o image.jpg"
-    os.system(cmd)
+def sobel(img):
+    img_gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    img_sobel = cv2.Sobel(img_gray, cv2.CV_16U, 1, 1)
+    return cv2.mean(img_sobel)[0]
+
+def laplacian(img):
+    img_gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    img_laplacian = cv2.Laplacian(img_gray, cv2.CV_16U)
+    return cv2.mean(img_laplacian)[0]
+
+def capture_image(picam2):
+    frame = picam2.capture_array()
+    return frame
+
+def calculation(picam2):
+    image = capture_image(picam2)
+    return laplacian(image)
 
 if __name__ == "__main__":
-    t1 = threading.Thread(target=runFocus, args=("t1",))
-    t1.setDaemon(True)
-    t1.start()    
-    runCamera()
+    # Initialize Picamera2
+    picam2 = Picamera2()
+    picam2.preview_configuration.main.size = (640, 480)  # Lower resolution for speed
+    picam2.preview_configuration.main.format = "RGB888"
+    picam2.configure("preview")
+    picam2.start()
+    
+    time.sleep(1)
+    print("Start focusing")
+
+    max_index = 10
+    max_value = 0.0
+    last_value = 0.0
+    dec_count = 0
+    focal_distance = 10
+
+    while True:
+        focusing(focal_distance)
+        val = calculation(picam2)
+
+        if val > max_value:
+            max_index = focal_distance
+            max_value = val
+
+        if val < last_value:
+            dec_count += 1
+        else:
+            dec_count = 0
+
+        if dec_count > 6:
+            break
+
+        last_value = val
+        focal_distance += 15
+
+        if focal_distance > 1000:
+            break
+
+    # Adjust to best focus and take high-res photo
+    focusing(max_index)
+    time.sleep(1)
+    picam2.configure("still")
+    picam2.start()
+    time.sleep(0.5)
+    picam2.capture_file("test.jpg")
+
+    print(f"Best focus index: {max_index}, Sharpness: {max_value:.2f}")
+
+    picam2.stop()
