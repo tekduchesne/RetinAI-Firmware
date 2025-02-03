@@ -8,14 +8,14 @@ def start_camera_feed():
         'libcamera-vid', 
         '-t', '0',  # Run indefinitely
         '--autofocus-mode', 'manual',
-        '--preview'  # Ensure preview is shown
+        '--preview', '0,0,640,480'  # Specify size and position of the preview window
     ])
     return feed_process
 
 def capture_photo():
     # Capture a photo using libcamera-still
     timestamp = time.strftime("%Y%m%d_%H%M%S")
-    output_filename = f"/home/pi/Pictures/captured_photo_{timestamp}.jpg"
+    output_filename = f"/home/RetinAi/Pictures/captured_photo_{timestamp}.jpg"
     subprocess.run([
         'libcamera-still',
         '-o', output_filename,
