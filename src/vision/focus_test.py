@@ -1,40 +1,56 @@
-import subprocess
+import os
 import threading
-import time
+import pygame
+from pygame.locals import *
 
-def start_camera_feed():
-    # Start the libcamera-vid process with a live feed
-    feed_process = subprocess.Popen([
-        'libcamera-vid', 
-        '-t', '0',  # Run indefinitely
-        '--autofocus-mode', 'manual',
-        '--preview', '0,0,640,480'  # Specify size and position of the preview window
-    ])
-    return feed_process
+# Initialize Pygame
+pygame.init()
 
-def capture_photo():
-    # Capture a photo using libcamera-still
-    timestamp = time.strftime("%Y%m%d_%H%M%S")
-    output_filename = f"/home/RetinAi/Pictures/captured_photo_{timestamp}.jpg"
-    subprocess.run([
-        'libcamera-still',
-        '-o', output_filename,
-        '--autofocus-mode', 'manual'
-    ])
-    print(f"Photo captured and saved to {output_filename}")
+# Set up the display
+screen = pygame.display.set_mode((320, 240), 0, 32)
+pygame.key.set_repeat(100)
 
-# Start the camera feed in a separate thread
-feed_process = start_camera_feed()
-
-try:
+def runFocus():
+    temp_val = 512  # Initial focus value (midpoint)
     while True:
-        user_input = input("Press 'c' to capture a photo or 'q' to quit: ").strip().lower()
-        if user_input == 'c':
-            capture_photo()
-        elif user_input == 'q':
-            break
-finally:
-    # Stop the camera feed when done
-    if feed_process:
-        feed_process.terminate()
-    print("Camera feed stopped.")
+        for event in pygame.event.get():
+            if event.type == KEYDOWN:
+                print(f"Current focus value: {temp_val}")
+                if event.key == K_UP:  # Increase focus value
+                    print('Focus UP')
+                    if temp_val < 1000:
+                        temp_val += 10
+                    else:
+                        print("Focus value is already at maximum.")
+                elif event.key == K_DOWN:  # Decrease focus value
+                    print('Focus DOWN')
+                    if temp_val > 12:
+                        temp_val -= 10
+                    else:
+                        print("Focus value is already at minimum.")
+                
+                # Convert focus value to I2C data format
+                value = (temp_val << 4) & 0x3FF0
+                dat1 = (value >> 8) & 0x3F
+                dat2 = value & 0xF0
+
+                # Send I2C command to adjust focus manually
+                try:
+                    result = os.system(f"i2cset -y 1 0x0c {dat1} {dat2}")
+                    if result != 0:
+                        print("Error: I2C write failed. Check your connection or device address.")
+                except Exception as e:
+                    print(f"I2C write error: {e}")
+
+def runCamera():
+    # Use libcamera-still in preview mode without autofocus
+    cmd = "libcamera-still -t 0"
+    os.system(cmd)
+
+if __name__ == "__main__":
+    # Start the manual focus control thread
+    t1 = threading.Thread(target=runFocus, daemon=True)
+    t1.start()
+
+    # Run the camera preview in the main thread
+    runCamera()
