@@ -50,7 +50,12 @@ def main():
     picam2 = initialize_camera()
 
     # Test different lens positions with delays
-    test_lens_positions(picam2)
+    # test_lens_positions(picam2)
+    
+    # Capture photo
+    timestamp = time.strftime("%Y%m%d_%H%M%S")
+    filename = f"test_lens_{timestamp}.jpg"
+    capture_photo(picam2, filename)
 
     # Stop the camera
     picam2.stop()

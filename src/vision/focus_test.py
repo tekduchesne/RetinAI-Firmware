@@ -5,52 +5,61 @@ from pygame.locals import *
 
 # Initialize Pygame
 pygame.init()
-
-# Set up the display
 screen = pygame.display.set_mode((320, 240), 0, 32)
 pygame.key.set_repeat(100)
 
-def runFocus():
-    temp_val = 512  # Initial focus value (midpoint)
+# Focus parameters
+MIN_FOCUS = 0
+MAX_FOCUS = 1000
+INITIAL_FOCUS = 500
+STEP_SIZE = 10
+
+# Thread-safe focus control
+focus_lock = threading.Lock()
+current_focus = INITIAL_FOCUS
+
+def set_focus(value):
+    """Set focus using v4l2-ctl with proper error handling"""
+    global current_focus
+    with focus_lock:
+        clamped = max(MIN_FOCUS, min(value, MAX_FOCUS))
+        if clamped != current_focus:
+            ret = os.system(f"v4l2-ctl -d /dev/v4l-subdev0 -c focus_absolute={clamped}")
+            if ret == 0:
+                current_focus = clamped
+                print(f"Focus set to: {current_focus}")
+            else:
+                print("Focus adjustment failed! Check v4l2 interface")
+
+def run_focus_control():
     while True:
         for event in pygame.event.get():
             if event.type == KEYDOWN:
-                print(f"Current focus value: {temp_val}")
-                if event.key == K_UP:  # Increase focus value
-                    print('Focus UP')
-                    if temp_val < 1000:
-                        temp_val += 10
-                    else:
-                        print("Focus value is already at maximum.")
-                elif event.key == K_DOWN:  # Decrease focus value
-                    print('Focus DOWN')
-                    if temp_val > 12:
-                        temp_val -= 10
-                    else:
-                        print("Focus value is already at minimum.")
-                
-                # Convert focus value to I2C data format
-                value = (temp_val << 4) & 0x3FF0
-                dat1 = (value >> 8) & 0x3F
-                dat2 = value & 0xF0
+                if event.key == K_UP:
+                    set_focus(current_focus + STEP_SIZE)
+                elif event.key == K_DOWN:
+                    set_focus(current_focus - STEP_SIZE)
+                elif event.key == K_q:
+                    pygame.quit()
+                    os._exit(0)
 
-                # Send I2C command to adjust focus manually
-                try:
-                    result = os.system(f"i2cset -y 1 0x0c {dat1} {dat2}")
-                    if result != 0:
-                        print("Error: I2C write failed. Check your connection or device address.")
-                except Exception as e:
-                    print(f"I2C write error: {e}")
-
-def runCamera():
-    # Use libcamera-still in preview mode without autofocus
-    cmd = "libcamera-still -t 0"
-    os.system(cmd)
+def run_camera():
+    camera_cmd = (
+        "libcamera-still -t 0 "
+        "--autofocus-mode manual "
+        "--tuning-file /usr/share/libcamera/ipa/rpi/pisp/imx477_af.json "
+        "--width 2028 --height 1520 "
+        "--viewfinder-width 320 --viewfinder-height 240"
+    )
+    os.system(camera_cmd)
 
 if __name__ == "__main__":
-    # Start the manual focus control thread
-    t1 = threading.Thread(target=runFocus, daemon=True)
-    t1.start()
+    # Set initial focus position
+    set_focus(INITIAL_FOCUS)
+    
+    # Start focus control thread
+    focus_thread = threading.Thread(target=run_focus_control, daemon=True)
+    focus_thread.start()
 
-    # Run the camera preview in the main thread
-    runCamera()
+    # Start camera preview
+    run_camera()
