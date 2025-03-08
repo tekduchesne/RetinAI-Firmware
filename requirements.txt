@@ -1,1 +1,5 @@
-# To be finished
+Pillow
+picamera2
+tkinter
+datetime
+time
