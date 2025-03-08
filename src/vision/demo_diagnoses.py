@@ -43,7 +43,6 @@ class DemoClient:
 
         # Get the diagnosis from the API response
         diagnosis = response.json()
-        print(diagnosis)
 
         # Load the true labels from the CSV file
         try:
