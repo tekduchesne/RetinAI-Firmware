@@ -14,8 +14,12 @@ Features:
 - Failure screen to retake picture of eye
 - Information screen to display results
 """
+from pathlib import Path
 import tkinter as tk
 from PIL import Image, ImageTk
+
+# Define the base path to the 'interface_ui' directory
+BASE_PATH = Path("src/interface/interface_ui").resolve()
 
 class TouchscreenUI:
     """
@@ -44,7 +48,7 @@ class TouchscreenUI:
         self._clear_frame()
 
         # Load and resize background image
-        bg_image = Image.open("src/interface/interface_ui/logo-1280x720.png")
+        bg_image = Image.open(BASE_PATH / "logo-1280x720.png")
         self.bg_photo = ImageTk.PhotoImage(bg_image)
 
         # Create Canvas and set image
@@ -58,7 +62,7 @@ class TouchscreenUI:
         welcome_label.place(relx=0.5, rely=0.3, anchor="center")  # Center text
 
         # Load transparent button image
-        start_button_image = Image.open("src/interface/interface_ui/start_button.png")
+        start_button_image = Image.open(BASE_PATH / "start_button.png")
         self.start_button_image = ImageTk.PhotoImage(start_button_image)
 
         # Create an oval-shaped button using Canvas

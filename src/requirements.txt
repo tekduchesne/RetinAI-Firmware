@@ -1,3 +1,4 @@
+Pillow
 picamera2
 tkinter
 datetime
