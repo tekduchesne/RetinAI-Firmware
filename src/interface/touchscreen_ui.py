@@ -19,7 +19,7 @@ import tkinter as tk
 from PIL import Image, ImageTk
 
 # Define the base path to the 'interface_ui' directory
-BASE_PATH = Path("src/interface/interface_ui").resolve()
+BASE_PATH = Path(__file__).parent / "interface_ui"
 
 class TouchscreenUI:
     """
