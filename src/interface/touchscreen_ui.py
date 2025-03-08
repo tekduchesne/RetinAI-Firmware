@@ -15,6 +15,7 @@ Features:
 - Information screen to display results
 """
 import tkinter as tk
+from PIL import Image, ImageTk
 
 class TouchscreenUI:
     """
@@ -25,7 +26,7 @@ class TouchscreenUI:
     def __init__(self, root):
         self.root = root
         self.root.title("RetinAI Touchscreen Interface")
-        self.root.geometry("1920x1080")  # Raspberry Pi touchscreen resolution
+        self.root.geometry("1280x720")  # Raspberry Pi touchscreen resolution
         self.current_frame = None
         self.selected_eye = None  # Store selected eye (Left or Right)
         self.left_eye_taken = False  # Track if left eye photo is captured
@@ -37,15 +38,53 @@ class TouchscreenUI:
 
     def show_welcome_screen(self):
         """
-        Show the welcome screen giving the user an option to start.
+        Show the welcome screen with a background image.
         """
+        self.root.attributes('-fullscreen', True)
         self._clear_frame()
 
-        welcome_label = tk.Label(self.current_frame, text="Welcome to the RetinAI Scanning Kiosk", font=("Helvetica", 18))
-        welcome_label.pack(pady=20)
+        # Load and resize background image
+        bg_image = Image.open("src/interface/interface_ui/logo-1280x720.png")
+        self.bg_photo = ImageTk.PhotoImage(bg_image)
 
-        start_button = tk.Button(self.current_frame, text="Start", font=("Helvetica", 16), command=self.show_eye_selection_screen)
-        start_button.pack(pady=20)
+        # Create Canvas and set image
+        canvas = tk.Canvas(self.current_frame, width=1280, height=720)
+        canvas.create_image(0, 0, image=self.bg_photo, anchor="nw")
+        canvas.pack(fill="both", expand=True)
+
+        # Place labels and buttons on top
+        welcome_label = tk.Label(self.current_frame, text="Welcome to the RetinAI Scanning Kiosk",
+                                font=("Helvetica", 18), bg="white", fg="black")
+        welcome_label.place(relx=0.5, rely=0.3, anchor="center")  # Center text
+
+        # Load transparent button image
+        start_button_image = Image.open("src/interface/interface_ui/start_button.png")
+        self.start_button_image = ImageTk.PhotoImage(start_button_image)
+
+        # Create an oval-shaped button using Canvas
+        button_x, button_y = 640, 360  # Center coordinates for the button
+        button_width, button_height = self.start_button_image.width(), self.start_button_image.height()
+
+        # Transparent oval on the canvas
+        canvas.create_oval(button_x - button_width // 2, button_y - button_height // 2,
+                           button_x + button_width // 2, button_y + button_height // 2,
+                           outline="", fill="") 
+
+        # Add the transparent image as a clickable object
+        canvas_button = canvas.create_image(button_x, button_y, image=self.start_button_image)
+        
+        # Bind click event to the canvas image
+        def on_click(event):
+            self.show_eye_selection_screen()
+        
+        canvas.tag_bind(canvas_button, "<Button-1>", on_click)
+
+    def show_simulation_screen(self):
+        """
+        Show the simulation screen with a six options of images in from the vision/simulation_photos directory.
+        Images can be refreshed with refresh button on the bottom right of the screen
+        """
+
 
     def show_eye_selection_screen(self):
         """

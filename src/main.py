@@ -5,7 +5,7 @@ This script uses the vision, network, and interface implementations
 to run the RetinAI Kiosk.
 
 Features:
-- Simple user interface for instructions, input, and diagnosis results
+- tkinter User interface for instructions, input, and diagnosis results
 - Vision system to take retinal photos
 - Network commands to send and receive information from the ML server
 
