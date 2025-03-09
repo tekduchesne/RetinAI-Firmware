@@ -41,8 +41,10 @@ class TouchscreenUI:
         self.left_eye_taken = False  # Track if left eye photo is captured
         self.right_eye_taken = False  # Track if right eye photo is captured
 
-        # For simulation selected images and scanning (!!! CHANGE ON PI !!!)
         self.selected_images = []
+        # For simulation selected images and scanning (PiOS)
+        # self.demo_client = DemoClient(images_dir='/home/RetinAi/Desktop/Embedded/raspi_raw', csv_dir='/home/RetinAi/Desktop/Embedded/test.csv')
+        # For simulation selected images and scanning (Windows)
         self.demo_client = DemoClient(images_dir='../../Embedded/raspi_raw', csv_dir='../../Embedded/test.csv')
 
     def start(self):
@@ -53,7 +55,8 @@ class TouchscreenUI:
         """
         Show the welcome screen with a background image.
         """
-        self.root.attributes('-fullscreen', True)
+        # disable for testing
+        # self.root.attributes('-fullscreen', True)
         self._clear_frame()
 
         # Load and resize background image
@@ -71,7 +74,7 @@ class TouchscreenUI:
         welcome_label.place(relx=0.5, rely=0.3, anchor="center")  # Center text
 
         # Load transparent button image
-        start_button_image = Image.open(BASE_PATH / "start_button.png")
+        start_button_image = Image.open(BASE_PATH / "purple_start_button.png")
         self.start_button_image = ImageTk.PhotoImage(start_button_image)
 
         # Create an oval-shaped button using Canvas
@@ -104,7 +107,20 @@ class TouchscreenUI:
         """
         self._clear_frame()
 
-        # Define image_dir as a Path object (!!! CHANGE ON PI !!!)
+        # Load and resize background image
+        sim_bg_path = BASE_PATH / "main_background.png"  # Path to the background image
+        if not sim_bg_path.exists():
+            messagebox.showerror("Error", f"Background image not found: {sim_bg_path}")
+            return
+
+        sim_bg = Image.open(sim_bg_path).resize((1280, 720))  # Resize to fit screen
+        self.sim_bg = ImageTk.PhotoImage(sim_bg)  # Store reference to avoid garbage collection
+
+        # Add background image as a Label
+        bg_label = tk.Label(self.current_frame, image=self.sim_bg)
+        bg_label.place(x=0, y=0, relwidth=1, relheight=1)  # Cover entire screen
+
+        # Define image_dir as a Path object (Windows)
         image_dir = Path('../../Embedded/raspi_raw')
 
         try:
@@ -114,13 +130,8 @@ class TouchscreenUI:
             messagebox.showerror("Error", "Not enough images in the directory!")
             return
 
-        # Create a main frame to center all content
-        main_frame = tk.Frame(self.current_frame, width=1280, height=720)
-        main_frame.pack(expand=True, fill="both")  # Center the main frame
-        main_frame.grid_propagate(False)  # Prevent resizing
-
         # Create a grid frame for images and center it
-        grid_frame = tk.Frame(main_frame)
+        grid_frame = tk.Frame(self.current_frame, bg="black")  # Transparent-like background
         grid_frame.place(relx=0.5, rely=0.45, anchor="center")  # Center the grid frame
 
         # Initialize dictionaries to track buttons and their states
@@ -151,14 +162,14 @@ class TouchscreenUI:
             label.pack()
 
         # Submit button (place it below the grid and center it)
-        submit_button = tk.Button(main_frame, text="Submit",
+        submit_button = tk.Button(self.current_frame, text="Submit",
                                 command=self.submit_selected_images,
                                 font=("Helvetica", 14), bg="green", fg="white")
-        submit_button.place(relx=0.6, rely=0.925, anchor="center")  # Center it at the bottom of main_frame
+        submit_button.place(relx=0.6, rely=0.95, anchor="center")  # Center it at the bottom of main_frame
 
         # Back button for returning to welcome screen
-        back_button = tk.Button(main_frame, text="Back", font=("Helvetica", 14), command=self.show_welcome_screen)
-        back_button.place(relx=0.4, rely=0.925, anchor="center")
+        back_button = tk.Button(self.current_frame, text="Back", font=("Helvetica", 14), command=self.show_welcome_screen)
+        back_button.place(relx=0.4, rely=0.95, anchor="center")
 
     def select_image(self, image_file):
         """
@@ -196,43 +207,84 @@ class TouchscreenUI:
         # Extract filenames of selected images
         image_filenames = [img.name for img in self.selected_images]
 
-        # DEBUG
-        for filename in image_filenames:
-            print(filename)
+        # DEBUG: Print filenames being submitted
+        print(f"Submitting filenames: {image_filenames}")
 
-        # Perform scanning using DemoClient
         try:
             start_time = time.time()
             results = self.demo_client.send_images_and_get_diagnosis(image_filenames)
             elapsed_time = time.time() - start_time
 
-            # Show results in a message box
-            result_message = f"Diagnosis Results: {results}\nTime Taken: {elapsed_time:.2f} seconds"
-            messagebox.showinfo("Scan Results", result_message)
+            print(f"Diagnosis Results: {results}")  # DEBUG: Print API response
 
-            # Clear selection after submission
-            self.selected_images.clear()
-
-            # Reset button appearances after submission
-            for btn in self.image_buttons.values():
-                btn.config(relief="flat", bg="SystemButtonFace")
-
-            # Navigate back to welcome screen or stay on simulation screen
-            self.show_welcome_screen()
+            # Navigate to results screen with diagnosis results
+            self.show_results_screen(image_filenames, results)
 
         except requests.ConnectionError as e:
-            # Handle connection errors (e.g., API server unreachable)
             messagebox.showerror("Connection Error", f"Failed to connect to the server:\n{str(e)}")
         except requests.HTTPError as e:
-            # Handle HTTP errors (e.g., 404, 500)
             messagebox.showerror("HTTP Error", f"Server returned an error:\n{str(e)}")
         except FileNotFoundError as e:
-            # Handle missing files (e.g., CSV or images)
             messagebox.showerror("File Error", f"File not found:\n{str(e)}")
         except Exception as e:
-            # Handle any other unexpected errors
             messagebox.showerror("Error", f"An unexpected error occurred:\n{str(e)}")
 
+    def show_results_screen(self, image_filenames, results):
+        """
+        Show the results screen with images and their diagnosis results side by side.
+        """
+        self._clear_frame()
+
+        # Create a main frame for results
+        main_frame = tk.Frame(self.current_frame, width=1280, height=720)
+        main_frame.pack(expand=True, fill="both")
+        main_frame.grid_propagate(False)
+
+        # Create a grid frame for displaying images and results
+        grid_frame = tk.Frame(main_frame)
+        grid_frame.place(relx=0.5, rely=0.4, anchor="center")  # Center it
+
+        # Display images and their results side by side
+        for i, result in enumerate(results):
+            filename = result['filename']
+            diagnosis = result['diagnosis']
+            is_correct = result['is_correct']
+
+            # Load and resize the image
+            img_path = Path(self.demo_client.images_dir) / filename
+            img = Image.open(img_path).resize((350, 350))  # Resize for display
+            photo = ImageTk.PhotoImage(img)
+
+            # Create a label for the image
+            img_label = tk.Label(grid_frame, image=photo)
+            img_label.image = photo 
+            img_label.grid(row=0, column=i, padx=20, pady=10)
+
+            # Create a label for the diagnosis result
+            result_text = (
+                f"Filename: {filename}\n"
+                f"Diagnosis: {diagnosis}\n"
+                f"Correct: {'Yes' if is_correct else 'No'}"
+            )
+            result_label = tk.Label(
+                grid_frame,
+                text=result_text,
+                font=("Helvetica", 14),
+                fg="green" if is_correct else "red",
+                justify="left",
+            )
+            result_label.grid(row=1, column=i, padx=20, pady=10)
+
+        # Done button to return to welcome screen
+        done_button = tk.Button(
+            main_frame,
+            text="Done",
+            font=("Helvetica", 16),
+            bg="blue",
+            fg="white",
+            command=self.show_welcome_screen,
+        )
+        done_button.place(relx=0.5, rely=0.9, anchor="center")
 
     def show_eye_selection_screen(self):
         """

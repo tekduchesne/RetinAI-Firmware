@@ -21,7 +21,7 @@ class DemoClient:
             image_filenames (list of str): List of image filenames to send.
 
         Returns:
-            list of bool: A list of booleans indicating whether the diagnosis matches the true label for each image.
+            list of dict: A list of dictionaries containing the diagnosis and whether it matches the true label.
         """
         if not image_filenames:
             raise ValueError("At least one image must be provided.")
@@ -69,6 +69,13 @@ class DemoClient:
 
             # Compare the diagnosis with the true label
             is_correct = bool(api_prediction == true_label)
-            results.append(is_correct)
+
+            # Append both diagnosis and correctness to results
+            results.append({
+                "filename": image_filename,
+                "diagnosis": image_info['prediction'],  # "Normal" or "Glaucoma"
+                "is_correct": is_correct
+            })
 
         return results
+
