@@ -2,7 +2,7 @@ from demo_diagnoses import DemoClient
 import time  # Import the time module
 
 # Initialize the DemoClient
-demo = DemoClient(images_dir='../../data/raspi_raw', csv_dir='../../data/test.csv')
+demo = DemoClient(images_dir='../../Embedded/raspi_raw', csv_dir='../../Embedded/test.csv')
 
 # List of image filenames to send
 image_filenames = ["0004.jpg", "0024.jpg", "0029.jpg", "3134.jpg", "4400.jpg", "1922.jpg", "1867.jpg", "1418.jpg", "3304.jpg", "1871.jpg"]

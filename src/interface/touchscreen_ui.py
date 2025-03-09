@@ -16,6 +16,11 @@ Features:
 """
 from pathlib import Path
 import tkinter as tk
+from tkinter import messagebox
+from vision.demo_diagnoses import DemoClient
+import time
+import random
+import requests
 from PIL import Image, ImageTk
 
 # Define the base path to the 'interface_ui' directory
@@ -35,6 +40,10 @@ class TouchscreenUI:
         self.selected_eye = None  # Store selected eye (Left or Right)
         self.left_eye_taken = False  # Track if left eye photo is captured
         self.right_eye_taken = False  # Track if right eye photo is captured
+
+        # For simulation selected images and scanning (!!! CHANGE ON PI !!!)
+        self.selected_images = []
+        self.demo_client = DemoClient(images_dir='../../Embedded/raspi_raw', csv_dir='../../Embedded/test.csv')
 
     def start(self):
         """Start the application by showing the welcome screen."""
@@ -83,11 +92,146 @@ class TouchscreenUI:
         
         canvas.tag_bind(canvas_button, "<Button-1>", on_click)
 
+        # Simulation button (bottom-right corner)
+        simulation_button = tk.Button(self.current_frame, text="Simulation",
+                                      command=self.show_simulation_screen,
+                                      font=("Helvetica", 14), bg="blue", fg="white")
+        simulation_button.place(relx=0.9, rely=0.9, anchor="center")
+
     def show_simulation_screen(self):
         """
-        Show the simulation screen with a six options of images in from the vision/simulation_photos directory.
-        Images can be refreshed with refresh button on the bottom right of the screen
+        Show the simulation screen with six selectable images.
         """
+        self._clear_frame()
+
+        # Define image_dir as a Path object (!!! CHANGE ON PI !!!)
+        image_dir = Path('../../Embedded/raspi_raw')
+
+        try:
+            # Randomly select 6 images from the directory
+            image_file_names = random.sample(list(image_dir.glob("*.jpg")), 6)
+        except ValueError:
+            messagebox.showerror("Error", "Not enough images in the directory!")
+            return
+
+        # Create a main frame to center all content
+        main_frame = tk.Frame(self.current_frame, width=1280, height=720)
+        main_frame.pack(expand=True, fill="both")  # Center the main frame
+        main_frame.grid_propagate(False)  # Prevent resizing
+
+        # Create a grid frame for images and center it
+        grid_frame = tk.Frame(main_frame)
+        grid_frame.place(relx=0.5, rely=0.45, anchor="center")  # Center the grid frame
+
+        # Initialize dictionaries to track buttons and their states
+        self.image_buttons = {}
+
+        # Display images in a grid (2 rows x 3 columns)
+        for i, image_file in enumerate(image_file_names):
+            # Create a sub-frame for each image and its label
+            item_frame = tk.Frame(grid_frame)
+            item_frame.grid(row=i // 3, column=i % 3, padx=20, pady=20)
+
+            # Load and resize the image
+            img = Image.open(image_file).resize((250, 250))  # Resize for display
+            photo = ImageTk.PhotoImage(img)
+
+            # Create a button for the image
+            btn = tk.Button(item_frame, image=photo,
+                            command=lambda f=image_file: self.select_image(f),
+                            relief="flat", bg="white")
+            btn.image = photo  # Keep a reference to avoid garbage collection
+            btn.pack()  # Pack the button inside the item frame
+
+            # Store the button in the dictionary for later updates
+            self.image_buttons[image_file] = btn
+
+            # Create a label for the image name and place it below the button
+            label = tk.Label(item_frame, text=image_file.name, font=("Helvetica", 12))
+            label.pack()
+
+        # Submit button (place it below the grid and center it)
+        submit_button = tk.Button(main_frame, text="Submit",
+                                command=self.submit_selected_images,
+                                font=("Helvetica", 14), bg="green", fg="white")
+        submit_button.place(relx=0.6, rely=0.925, anchor="center")  # Center it at the bottom of main_frame
+
+        # Back button for returning to welcome screen
+        back_button = tk.Button(main_frame, text="Back", font=("Helvetica", 14), command=self.show_welcome_screen)
+        back_button.place(relx=0.4, rely=0.925, anchor="center")
+
+    def select_image(self, image_file):
+        """
+        Select or deselect an image.
+        """
+        if not hasattr(self, 'selected_images'):
+            self.selected_images = []  # Initialize selected_images if not already defined
+
+        if image_file in self.selected_images:
+            # Deselect the image
+            self.selected_images.remove(image_file)
+
+            # Update button appearance to indicate deselection (reset to default)
+            self.image_buttons[image_file].config(relief="flat", bg="SystemButtonFace")
+        elif len(self.selected_images) < 2:
+            # Select the image
+            self.selected_images.append(image_file)
+
+            # Update button appearance to indicate selection (e.g., gray out)
+            self.image_buttons[image_file].config(relief="sunken", bg="lightgray")
+        else:
+            # Show a popup if trying to select more than two images
+            messagebox.showwarning("Selection Limit", "You can only select up to two images.")
+
+
+    def submit_selected_images(self):
+        """
+        Submit selected images for scanning.
+        """
+        # Ensure exactly two images are selected
+        if not hasattr(self, 'selected_images') or len(self.selected_images) != 2:
+            messagebox.showerror("Error", "Please select exactly two images!")
+            return
+
+        # Extract filenames of selected images
+        image_filenames = [img.name for img in self.selected_images]
+
+        # DEBUG
+        for filename in image_filenames:
+            print(filename)
+
+        # Perform scanning using DemoClient
+        try:
+            start_time = time.time()
+            results = self.demo_client.send_images_and_get_diagnosis(image_filenames)
+            elapsed_time = time.time() - start_time
+
+            # Show results in a message box
+            result_message = f"Diagnosis Results: {results}\nTime Taken: {elapsed_time:.2f} seconds"
+            messagebox.showinfo("Scan Results", result_message)
+
+            # Clear selection after submission
+            self.selected_images.clear()
+
+            # Reset button appearances after submission
+            for btn in self.image_buttons.values():
+                btn.config(relief="flat", bg="SystemButtonFace")
+
+            # Navigate back to welcome screen or stay on simulation screen
+            self.show_welcome_screen()
+
+        except requests.ConnectionError as e:
+            # Handle connection errors (e.g., API server unreachable)
+            messagebox.showerror("Connection Error", f"Failed to connect to the server:\n{str(e)}")
+        except requests.HTTPError as e:
+            # Handle HTTP errors (e.g., 404, 500)
+            messagebox.showerror("HTTP Error", f"Server returned an error:\n{str(e)}")
+        except FileNotFoundError as e:
+            # Handle missing files (e.g., CSV or images)
+            messagebox.showerror("File Error", f"File not found:\n{str(e)}")
+        except Exception as e:
+            # Handle any other unexpected errors
+            messagebox.showerror("Error", f"An unexpected error occurred:\n{str(e)}")
 
 
     def show_eye_selection_screen(self):
