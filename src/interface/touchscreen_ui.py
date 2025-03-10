@@ -65,11 +65,11 @@ class TouchscreenUI:
         self.right_eye_taken = False
 
         # disable for testing
-        self.root.attributes('-fullscreen', True)
+        # self.root.attributes('-fullscreen', True)
         self._clear_frame()
 
         # Load and resize background image
-        bg_image = Image.open(BASE_PATH / "logo-1280x720.png")
+        bg_image = Image.open(BASE_PATH / "assets/start/Start Screen Background.png")
         self.bg_photo = ImageTk.PhotoImage(bg_image)
 
         # Create Canvas and set image
@@ -77,13 +77,14 @@ class TouchscreenUI:
         canvas.create_image(0, 0, image=self.bg_photo, anchor="nw")
         canvas.pack(fill="both", expand=True)
 
-        # Place labels and buttons on top
+        """# Place labels and buttons on top
         welcome_label = tk.Label(self.current_frame, text="Welcome to the RetinAI Scanning Kiosk",
                                 font=("Helvetica", 18), bg="white", fg="black")
-        welcome_label.place(relx=0.5, rely=0.3, anchor="center")  # Center text
+        welcome_label.place(relx=0.5, rely=0.3, anchor="center")  # Center text"""
 
         # Load transparent button image
-        start_button_image = Image.open(BASE_PATH / "purple_start_button.png")
+        start_button_image = Image.open(BASE_PATH / "assets/start/Start Scan Button.png")
+        simulation_button_image = Image.open(BASE_PATH / "assets/start/Simulation Button.png")
         self.start_button_image = ImageTk.PhotoImage(start_button_image)
 
         # Create an oval-shaped button using Canvas
@@ -120,7 +121,7 @@ class TouchscreenUI:
         self.selected_images = []  # Clear any previously selected images
 
         # Load and resize background image
-        sim_bg_path = BASE_PATH / "main_background.png"  # Path to the background image
+        sim_bg_path = BASE_PATH / "assets/simulation screen/simulation background.png"  # Path to the background image
         if not sim_bg_path.exists():
             messagebox.showerror("Error", f"Background image not found: {sim_bg_path}")
             return

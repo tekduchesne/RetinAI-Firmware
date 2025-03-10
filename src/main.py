@@ -11,8 +11,6 @@ Features:
 
 """
 
-# from vision.<...> import ...
-# from network.<...> import ...
 import tkinter as tk
 from interface.touchscreen_ui import TouchscreenUI
 
