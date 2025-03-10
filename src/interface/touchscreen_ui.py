@@ -124,6 +124,8 @@ class TouchscreenUI:
         bg_label = tk.Label(self.current_frame, image=self.sim_bg)
         bg_label.place(x=0, y=0, relwidth=1, relheight=1)  # Cover entire screen
 
+        # Define image_dir as a Path object (PiOS)
+        # image_dir = Path('/home/RetinAi/Desktop/Embedded/raspi_raw')
         # Define image_dir as a Path object (Windows)
         image_dir = Path('../../Embedded/raspi_raw')
 
@@ -292,20 +294,11 @@ class TouchscreenUI:
     def show_eye_selection_screen(self):
         """
         Show the eye selection screen for the user to indicate which eye they would like to take an image of.
+        The "Submit" button will be greyed out until both eyes are captured.
         """
         self._clear_frame()
 
-        # Check if both eyes have been captured
-        if self.left_eye_taken and self.right_eye_taken:
-            submit_button = tk.Button(
-                self.current_frame,
-                text="Submit",
-                font=("Helvetica", 16),
-                command=self.show_information_screen  # Placeholder for backend submission logic
-            )
-            submit_button.pack(pady=20)
-            return
-
+        # Prompt label
         prompt_label = tk.Label(self.current_frame, text="Select which eye to scan:", font=("Helvetica", 18))
         prompt_label.pack(pady=20)
 
@@ -315,7 +308,7 @@ class TouchscreenUI:
                 self.current_frame,
                 text="Left Eye",
                 font=("Helvetica", 16),
-                command=lambda: self.capture_photo_with_countdown("Left")  # Updated command
+                command=lambda: self.capture_photo_with_countdown("Left")
             )
             left_eye_button.pack(pady=10)
         else:
@@ -334,7 +327,7 @@ class TouchscreenUI:
                 self.current_frame,
                 text="Right Eye",
                 font=("Helvetica", 16),
-                command=lambda: self.capture_photo_with_countdown("Right")  # Updated command
+                command=lambda: self.capture_photo_with_countdown("Right")
             )
             right_eye_button.pack(pady=10)
         else:
@@ -347,6 +340,18 @@ class TouchscreenUI:
             )
             right_eye_button.pack(pady=10)
 
+        # Submit button, greyed out until both eyes are captured
+        submit_button_state = "normal" if self.left_eye_taken and self.right_eye_taken else "disabled"
+        submit_button = tk.Button(
+            self.current_frame,
+            text="Submit",
+            font=("Helvetica", 16),
+            state=submit_button_state,  # Enable only if both eyes are captured
+            command=self.show_information_screen  # Placeholder for backend submission logic
+        )
+        submit_button.pack(pady=20)
+
+        # Back button for returning to the welcome screen
         back_button = tk.Button(self.current_frame, text="Back", font=("Helvetica", 16), command=self.show_welcome_screen)
         back_button.pack(pady=20)
 
@@ -376,7 +381,13 @@ class TouchscreenUI:
                 # Capture the photo after countdown finishes
                 try:
                     capture_photo(side.lower())  # Call external capture_photo function
-                    
+
+                    # Update flags based on which eye was captured
+                    if side == "Left":
+                        self.left_eye_taken = True
+                    elif side == "Right":
+                        self.right_eye_taken = True
+
                     # Display the captured photo briefly
                     self.display_captured_photo(side)
                 except Exception as e:
