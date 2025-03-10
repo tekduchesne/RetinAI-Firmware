@@ -1,4 +1,4 @@
-# RetinAI Kiosk Firmware (WIP README)
+# RetinAI Kiosk Firmware
 This repository contains the kiosk firmware for initiazing hardware components
 and user interface to carry out taking retinal images to be processed in the cloud 
 
