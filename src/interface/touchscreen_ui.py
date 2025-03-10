@@ -65,7 +65,7 @@ class TouchscreenUI:
         self.right_eye_taken = False
 
         # disable for testing
-        # self.root.attributes('-fullscreen', True)
+        self.root.attributes('-fullscreen', True)
         self._clear_frame()
 
         # Load and resize background image
