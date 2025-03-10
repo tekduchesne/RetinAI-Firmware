@@ -5,7 +5,7 @@ This script creates a simple graphical user interface (GUI) using tkinter.
 The interface is designed for a touchscreen device allowing users to navigate
 between screens, enter information, and interact with the application.
 
-Features:
+Features: (CHANGED)
 - Welcome screen with navigation
 - User input screen for selecting eye
     - Left/Right eye
@@ -19,10 +19,13 @@ import tkinter as tk
 from tkinter import messagebox
 from vision.demo_diagnoses import DemoClient
 from vision.camera_impl import capture_photo
+from network.exampleClient import backendRequests
+from network.exampleClientVariables import imagesLocation
 import time
 import random
 import requests
 from PIL import Image, ImageTk
+import os
 
 # Define the base path to the 'interface_ui' directory
 BASE_PATH = Path(__file__).parent / "interface_ui"
@@ -41,12 +44,13 @@ class TouchscreenUI:
         self.selected_eye = None  # Store selected eye (Left or Right)
         self.left_eye_taken = False  # Track if left eye photo is captured
         self.right_eye_taken = False  # Track if right eye photo is captured
+        self.image_number = 1  # Counter for image filenames
 
         self.selected_images = []
         # For simulation selected images and scanning (PiOS)
-        # self.demo_client = DemoClient(images_dir='/home/RetinAi/Desktop/Embedded/raspi_raw', csv_dir='/home/RetinAi/Desktop/Embedded/test.csv')
+        self.demo_client = DemoClient(images_dir='/home/RetinAi/Desktop/Embedded/raspi_raw', csv_dir='/home/RetinAi/Desktop/Embedded/test.csv')
         # For simulation selected images and scanning (Windows)
-        self.demo_client = DemoClient(images_dir='../../Embedded/raspi_raw', csv_dir='../../Embedded/test.csv')
+        # self.demo_client = DemoClient(images_dir='../../Embedded/raspi_raw', csv_dir='../../Embedded/test.csv')
 
     def start(self):
         """Start the application by showing the welcome screen."""
@@ -56,6 +60,11 @@ class TouchscreenUI:
         """
         Show the welcome screen with a background image.
         """
+
+        # Reset flags for left and right eye capture
+        self.left_eye_taken = False
+        self.right_eye_taken = False
+
         # disable for testing
         # self.root.attributes('-fullscreen', True)
         self._clear_frame()
@@ -125,9 +134,9 @@ class TouchscreenUI:
         bg_label.place(x=0, y=0, relwidth=1, relheight=1)  # Cover entire screen
 
         # Define image_dir as a Path object (PiOS)
-        # image_dir = Path('/home/RetinAi/Desktop/Embedded/raspi_raw')
+        image_dir = Path('/home/RetinAi/Desktop/Embedded/raspi_raw')
         # Define image_dir as a Path object (Windows)
-        image_dir = Path('../../Embedded/raspi_raw')
+        # image_dir = Path('../../Embedded/raspi_raw')
 
         try:
             # Randomly select 6 images from the directory
@@ -293,8 +302,7 @@ class TouchscreenUI:
 
     def show_eye_selection_screen(self):
         """
-        Show the eye selection screen for the user to indicate which eye they would like to take an image of.
-        The "Submit" button will be greyed out until both eyes are captured.
+        Show the eye selection screen for capturing left and right eye images.
         """
         self._clear_frame()
 
@@ -302,7 +310,7 @@ class TouchscreenUI:
         prompt_label = tk.Label(self.current_frame, text="Select which eye to scan:", font=("Helvetica", 18))
         prompt_label.pack(pady=20)
 
-        # Left Eye button, greyed out if already selected
+        # Left Eye button
         if not self.left_eye_taken:
             left_eye_button = tk.Button(
                 self.current_frame,
@@ -321,7 +329,7 @@ class TouchscreenUI:
             )
             left_eye_button.pack(pady=10)
 
-        # Right Eye button, greyed out if already selected
+        # Right Eye button
         if not self.right_eye_taken:
             right_eye_button = tk.Button(
                 self.current_frame,
@@ -346,12 +354,12 @@ class TouchscreenUI:
             self.current_frame,
             text="Submit",
             font=("Helvetica", 16),
-            state=submit_button_state,  # Enable only if both eyes are captured
-            command=self.show_information_screen  # Placeholder for backend submission logic
+            state=submit_button_state,
+            command=self.submit_images_and_show_results
         )
         submit_button.pack(pady=20)
 
-        # Back button for returning to the welcome screen
+        # Back button for returning to welcome screen
         back_button = tk.Button(self.current_frame, text="Back", font=("Helvetica", 16), command=self.show_welcome_screen)
         back_button.pack(pady=20)
 
@@ -380,7 +388,15 @@ class TouchscreenUI:
             else:
                 # Capture the photo after countdown finishes
                 try:
-                    capture_photo(side.lower())  # Call external capture_photo function
+                    # Generate filename using image number and side
+                    filename = f"{self.image_number}_{side.lower()}.jpg"
+                    filepath = f"/home/RetinAi/Desktop/firmware/RetinAI-Firmware/src/vision/captured_photos/{filename}"
+
+                    # Call external capture_photo function with filepath
+                    capture_photo(filepath)
+
+                    # Increment image number for next capture
+                    self.image_number += 1
 
                     # Update flags based on which eye was captured
                     if side == "Left":
@@ -389,25 +405,22 @@ class TouchscreenUI:
                         self.right_eye_taken = True
 
                     # Display the captured photo briefly
-                    self.display_captured_photo(side)
+                    self.display_captured_photo(filepath)
                 except Exception as e:
                     messagebox.showerror("Error", f"Failed to capture {side} eye photo: {str(e)}")
                     self.show_eye_selection_screen()  # Return to selection screen in case of error
 
         update_countdown(3)  # Start countdown from 5 seconds
 
-    def display_captured_photo(self, side):
+    def display_captured_photo(self, filepath):
         """
         Display the captured photo for 1-2 seconds before returning to the eye selection screen.
         """
         self._clear_frame()
 
-        # Path to the captured photo
-        photo_path = f"/home/RetinAi/Desktop/firmware/RetinAI-Firmware/src/vision/captured_photos/{side.lower()}_eye.jpg"
-
         try:
             # Load and display the captured image
-            img = Image.open(photo_path).resize((400, 300))  # Resize for display
+            img = Image.open(filepath).resize((400, 300))  # Resize for display
             photo = ImageTk.PhotoImage(img)
 
             img_label = tk.Label(self.current_frame, image=photo)
@@ -416,7 +429,7 @@ class TouchscreenUI:
 
             success_label = tk.Label(
                 self.current_frame,
-                text=f"{side} eye photo captured successfully!",
+                text=f"Photo captured successfully!",
                 font=("Helvetica", 18),
                 fg="green"
             )
@@ -426,8 +439,81 @@ class TouchscreenUI:
             self.current_frame.after(2000, self.show_eye_selection_screen)
 
         except FileNotFoundError:
-            messagebox.showerror("Error", f"Photo not found: {photo_path}")
+            messagebox.showerror("Error", f"Photo not found: {filepath}")
             self.show_eye_selection_screen()  # Return to selection screen in case of error
+
+    def submit_images_and_show_results(self):
+        """
+        Submit captured images to the backend API and display results.
+        """
+        try:
+            # Send POST request with both images
+            response = backendRequests("post")  # Call postRequest() from exampleClient.py
+            
+            # Check response status
+            if response.status_code == 200:
+                # Parse JSON response
+                results = response.json()  # Convert JSON response to Python dictionary
+                
+                # Extract filenames of captured images from the directory
+                image_files = os.listdir(imagesLocation)
+                image_paths = [os.path.join(imagesLocation, img) for img in image_files]
+                
+                # Show results screen with images and diagnosis
+                self.show_results_screen(image_paths, results)
+            else:
+                messagebox.showerror("Error", f"Failed to get results: {response.status_code}")
+        
+        except requests.ConnectionError as e:
+            messagebox.showerror("Connection Error", f"Failed to connect to the server:\n{str(e)}")
+        except requests.HTTPError as e:
+            messagebox.showerror("HTTP Error", f"Server returned an error:\n{str(e)}")
+        except FileNotFoundError as e:
+            messagebox.showerror("File Error", f"File not found:\n{str(e)}")
+        except Exception as e:
+            messagebox.showerror("Error", f"An unexpected error occurred:\n{str(e)}")
+
+    def show_results_screen(self, image_paths, results):
+        """
+        Display submitted images and their respective diagnosis results.
+        """
+        self._clear_frame()
+
+        # Create a grid frame for displaying images and results
+        grid_frame = tk.Frame(self.current_frame)
+        grid_frame.place(relx=0.5, rely=0.4, anchor="center")
+
+        for i, image_info in enumerate(results["image_Info"]):
+            # Load and display image
+            img_path = os.path.join(imagesLocation, image_info["name"])
+            img = Image.open(img_path).resize((350, 350))  # Resize for display
+            photo = ImageTk.PhotoImage(img)
+
+            img_label = tk.Label(grid_frame, image=photo)
+            img_label.image = photo  # Keep reference to avoid garbage collection
+            img_label.grid(row=0, column=i, padx=20, pady=10)
+
+            # Display result below image
+            result_text = (
+                f"Filename: {image_info['name']}\n"
+                f"Eye Side: {image_info['eyeSide']}\n"
+                f"Cropped: {'Yes' if image_info['cropped'] else 'No'}\n"
+                f"Prediction: {image_info['prediction']}\n"
+                f"Selected for Display: {'Yes' if image_info['selectedForDisp'] else 'No'}"
+            )
+            result_label = tk.Label(grid_frame, text=result_text, font=("Helvetica", 14), justify="center")
+            result_label.grid(row=1, column=i, padx=20, pady=10)
+
+        # Finish button to return to welcome screen
+        finish_button = tk.Button(
+            self.current_frame,
+            text="Finish",
+            font=("Helvetica", 16),
+            command=self.show_welcome_screen,
+            bg="blue",
+            fg="white"
+        )
+        finish_button.place(relx=0.5, rely=0.9, anchor="center")
 
     def show_success_screen(self):
         """

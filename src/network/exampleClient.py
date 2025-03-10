@@ -4,7 +4,7 @@ import time
 import os
 
 # Get Environment Variables
-from exampleClientVariables import kiosk_id, request_url, imagesLocation
+from network.exampleClientVariables import kiosk_id, request_url, imagesLocation
 
 def getRequest():
     # simple get response to check if api is working
