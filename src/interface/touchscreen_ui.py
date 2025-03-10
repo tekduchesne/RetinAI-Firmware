@@ -47,9 +47,9 @@ class TouchscreenUI:
 
         self.selected_images = []
         # For simulation selected images and scanning (PiOS)
-        self.demo_client = DemoClient(images_dir='/home/RetinAi/Desktop/Embedded/raspi_raw', csv_dir='/home/RetinAi/Desktop/Embedded/test.csv')
+        # self.demo_client = DemoClient(images_dir='/home/RetinAi/Desktop/Embedded/raspi_raw', csv_dir='/home/RetinAi/Desktop/Embedded/test.csv')
         # For simulation selected images and scanning (Windows)
-        # self.demo_client = DemoClient(images_dir='../../Embedded/raspi_raw', csv_dir='../../Embedded/test.csv')
+        self.demo_client = DemoClient(images_dir='../../Embedded/raspi_raw', csv_dir='../../Embedded/test.csv')
 
     def start(self):
         """Start the application by showing the welcome screen."""
@@ -134,9 +134,9 @@ class TouchscreenUI:
         bg_label.place(x=0, y=0, relwidth=1, relheight=1)  # Cover entire screen
 
         # Define image_dir as a Path object (PiOS)
-        image_dir = Path('/home/RetinAi/Desktop/Embedded/raspi_raw')
+        # image_dir = Path('/home/RetinAi/Desktop/Embedded/raspi_raw')
         # Define image_dir as a Path object (Windows)
-        # image_dir = Path('../../Embedded/raspi_raw')
+        image_dir = Path('../../Embedded/raspi_raw')
 
         try:
             # Randomly select 6 images from the directory
