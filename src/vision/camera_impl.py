@@ -26,7 +26,7 @@ def capture_photo(side):
     os.makedirs(OUTPUT_DIR, exist_ok=True)
     
     # Filename based on the side of the eye
-    filename = f"{OUTPUT_DIR}/{side}_eye.jpg"
+    filename = f"{OUTPUT_DIR}/1_{side.lower()}.jpg"
     
     # Command to capture a photo using libcamera-still
     camera_cmd = (
