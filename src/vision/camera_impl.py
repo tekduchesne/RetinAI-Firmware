@@ -5,27 +5,36 @@ Features:
 - Camera initializion method
 - Capture Photo that takes in side of eye as argument and saves it
 """
-from picamera2 import Picamera2
-import time
-from datetime import datetime
+import os
 
-# Initialize Arducam using picamera2 library
+# Directory to save the captured photos
+OUTPUT_DIR = "/home/RetinAi/Desktop/firmware/RetinAI-Firmware/src/vision/captured_photos"
+
+# Initialize Arducam using libcamera
 def initialize_camera():
-    # Initialize the camera
-    picam2 = Picamera2()
-    picam2.start()  # Start the camera
-    return picam2
+    print("Camera initialized using libcamera.")
+    # No explicit initialization is required for libcamera
+    return True
 
 # Capture photo of left/right eye and save it
-def capture_photo(picam2, side):
+def capture_photo(side):
     if side.lower() not in ["left", "right"]:
         print("Invalid input. Please choose 'left' or 'right'.")
         return
     
-    # Get the current time in YYYYMMDD_HHMMSS format
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    filename = f"{side}_eye_{timestamp}.jpg"
+    # Ensure output directory exists
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
     
-    # Capture a photo and save it to the specified file
-    picam2.capture_file(filename)
+    # Filename based on the side of the eye
+    filename = f"{OUTPUT_DIR}/{side}_eye.jpg"
+    
+    # Command to capture a photo using libcamera-still
+    camera_cmd = (
+        f"libcamera-still -o {filename} "
+        "--width 2028 --height 1520 "
+        "--tuning-file /usr/share/libcamera/ipa/rpi/pisp/imx477_af.json "
+        "--autofocus-mode continuous "
+    )
+    
+    os.system(camera_cmd)
     print(f"{side.capitalize()} retinal image saved as {filename}")

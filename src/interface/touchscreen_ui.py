@@ -18,6 +18,7 @@ from pathlib import Path
 import tkinter as tk
 from tkinter import messagebox
 from vision.demo_diagnoses import DemoClient
+from vision.camera_impl import capture_photo
 import time
 import random
 import requests
@@ -107,6 +108,9 @@ class TouchscreenUI:
         """
         self._clear_frame()
 
+        # Reset selected images when entering the simulation screen
+        self.selected_images = []  # Clear any previously selected images
+
         # Load and resize background image
         sim_bg_path = BASE_PATH / "main_background.png"  # Path to the background image
         if not sim_bg_path.exists():
@@ -194,7 +198,6 @@ class TouchscreenUI:
             # Show a popup if trying to select more than two images
             messagebox.showwarning("Selection Limit", "You can only select up to two images.")
 
-
     def submit_selected_images(self):
         """
         Submit selected images for scanning.
@@ -218,7 +221,7 @@ class TouchscreenUI:
             print(f"Diagnosis Results: {results}")  # DEBUG: Print API response
 
             # Navigate to results screen with diagnosis results
-            self.show_results_screen(image_filenames, results)
+            self.show_results_sim_screen(image_filenames, results)
 
         except requests.ConnectionError as e:
             messagebox.showerror("Connection Error", f"Failed to connect to the server:\n{str(e)}")
@@ -229,7 +232,7 @@ class TouchscreenUI:
         except Exception as e:
             messagebox.showerror("Error", f"An unexpected error occurred:\n{str(e)}")
 
-    def show_results_screen(self, image_filenames, results):
+    def show_results_sim_screen(self, image_filenames, results):
         """
         Show the results screen with images and their diagnosis results side by side.
         """
@@ -289,64 +292,131 @@ class TouchscreenUI:
     def show_eye_selection_screen(self):
         """
         Show the eye selection screen for the user to indicate which eye they would like to take an image of.
-        Previously selected 
         """
         self._clear_frame()
+
+        # Check if both eyes have been captured
+        if self.left_eye_taken and self.right_eye_taken:
+            submit_button = tk.Button(
+                self.current_frame,
+                text="Submit",
+                font=("Helvetica", 16),
+                command=self.show_information_screen  # Placeholder for backend submission logic
+            )
+            submit_button.pack(pady=20)
+            return
 
         prompt_label = tk.Label(self.current_frame, text="Select which eye to scan:", font=("Helvetica", 18))
         prompt_label.pack(pady=20)
 
         # Left Eye button, greyed out if already selected
         if not self.left_eye_taken:
-            left_eye_button = tk.Button(self.current_frame, text="Left Eye", font=("Helvetica", 16), command=lambda: self.capture_photo("Left"))
+            left_eye_button = tk.Button(
+                self.current_frame,
+                text="Left Eye",
+                font=("Helvetica", 16),
+                command=lambda: self.capture_photo_with_countdown("Left")  # Updated command
+            )
             left_eye_button.pack(pady=10)
         else:
-            left_eye_button = tk.Button(self.current_frame, text="Left Eye (Complete)", font=("Helvetica", 16), state="disabled", disabledforeground="gray")
+            left_eye_button = tk.Button(
+                self.current_frame,
+                text="Left Eye (Complete)",
+                font=("Helvetica", 16),
+                state="disabled",
+                disabledforeground="gray"
+            )
             left_eye_button.pack(pady=10)
 
         # Right Eye button, greyed out if already selected
         if not self.right_eye_taken:
-            right_eye_button = tk.Button(self.current_frame, text="Right Eye", font=("Helvetica", 16), command=lambda: self.capture_photo("Right"))
+            right_eye_button = tk.Button(
+                self.current_frame,
+                text="Right Eye",
+                font=("Helvetica", 16),
+                command=lambda: self.capture_photo_with_countdown("Right")  # Updated command
+            )
             right_eye_button.pack(pady=10)
         else:
-            right_eye_button = tk.Button(self.current_frame, text="Right Eye (Complete)", font=("Helvetica", 16), state="disabled", disabledforeground="gray")
+            right_eye_button = tk.Button(
+                self.current_frame,
+                text="Right Eye (Complete)",
+                font=("Helvetica", 16),
+                state="disabled",
+                disabledforeground="gray"
+            )
             right_eye_button.pack(pady=10)
 
         back_button = tk.Button(self.current_frame, text="Back", font=("Helvetica", 16), command=self.show_welcome_screen)
         back_button.pack(pady=20)
 
-    def capture_photo(self, side):
+    def capture_photo_with_countdown(self, side):
         """
-        Capture photo for the selected eye side.
-        """
-        if side == "Left":
-            self.left_eye_taken = True
-        elif side == "Right":
-            self.right_eye_taken = True
-
-        self.selected_eye = side  # Store the selected eye
-        self.show_loading_screen()
-
-    def show_loading_screen(self):
-        """
-        Show a loading screen while photo is captured.
+        Show a countdown screen for 5 seconds, capture the photo, display it briefly, 
+        and return to the eye selection screen.
         """
         self._clear_frame()
 
-        loading_label = tk.Label(self.current_frame, text="Capturing the eye image... Please wait.", font=("Helvetica", 18))
-        loading_label.pack(pady=20)
+        # Countdown label
+        countdown_label = tk.Label(
+            self.current_frame,
+            text="Get ready! Capturing photo in:",
+            font=("Helvetica", 18)
+        )
+        countdown_label.pack(pady=20)
 
-        # Simulate a loading process
-        self.root.after(2000, self.check_capture_status)  # TODO: Replace with actual capture process logic
+        countdown_number_label = tk.Label(self.current_frame, text="5", font=("Helvetica", 36), fg="red")
+        countdown_number_label.pack(pady=20)
 
-    def check_capture_status(self):
+        def update_countdown(seconds_left):
+            if seconds_left > 0:
+                countdown_number_label.config(text=str(seconds_left))
+                self.current_frame.after(1000, update_countdown, seconds_left - 1)  # Call again after 1 second
+            else:
+                # Capture the photo after countdown finishes
+                try:
+                    capture_photo(side.lower())  # Call external capture_photo function
+                    
+                    # Display the captured photo briefly
+                    self.display_captured_photo(side)
+                except Exception as e:
+                    messagebox.showerror("Error", f"Failed to capture {side} eye photo: {str(e)}")
+                    self.show_eye_selection_screen()  # Return to selection screen in case of error
+
+        update_countdown(3)  # Start countdown from 5 seconds
+
+    def display_captured_photo(self, side):
         """
-        Check if both images have been taken.
+        Display the captured photo for 1-2 seconds before returning to the eye selection screen.
         """
-        if self.left_eye_taken and self.right_eye_taken:
-            self.show_success_screen()
-        else:
-            self.show_eye_selection_screen()  # Return to eye selection screen if both eyes are not taken yet
+        self._clear_frame()
+
+        # Path to the captured photo
+        photo_path = f"/home/RetinAi/Desktop/firmware/RetinAI-Firmware/src/vision/captured_photos/{side.lower()}_eye.jpg"
+
+        try:
+            # Load and display the captured image
+            img = Image.open(photo_path).resize((400, 300))  # Resize for display
+            photo = ImageTk.PhotoImage(img)
+
+            img_label = tk.Label(self.current_frame, image=photo)
+            img_label.image = photo  # Keep reference to avoid garbage collection
+            img_label.pack(pady=20)
+
+            success_label = tk.Label(
+                self.current_frame,
+                text=f"{side} eye photo captured successfully!",
+                font=("Helvetica", 18),
+                fg="green"
+            )
+            success_label.pack(pady=20)
+
+            # Return to eye selection screen after 2 seconds
+            self.current_frame.after(2000, self.show_eye_selection_screen)
+
+        except FileNotFoundError:
+            messagebox.showerror("Error", f"Photo not found: {photo_path}")
+            self.show_eye_selection_screen()  # Return to selection screen in case of error
 
     def show_success_screen(self):
         """
