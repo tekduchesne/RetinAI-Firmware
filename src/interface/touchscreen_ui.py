@@ -44,7 +44,6 @@ class TouchscreenUI:
         self.selected_eye = None  # Store selected eye (Left or Right)
         self.left_eye_taken = False  # Track if left eye photo is captured
         self.right_eye_taken = False  # Track if right eye photo is captured
-        self.image_number = 1  # Counter for image filenames
 
         self.selected_images = []
         # For simulation selected images and scanning (PiOS)
@@ -388,15 +387,18 @@ class TouchscreenUI:
             else:
                 # Capture the photo after countdown finishes
                 try:
-                    # Generate filename using image number and side
-                    filename = f"{self.image_number}_{side.lower()}.jpg"
+                    # Define filename based on side of the eye
+                    filename = f"1_{side.lower()}.jpg"
                     filepath = f"/home/RetinAi/Desktop/firmware/RetinAI-Firmware/src/vision/captured_photos/{filename}"
 
-                    # Call external capture_photo function with filepath
-                    capture_photo(filepath)
+                    # Check if a file with the same name exists and remove it
+                    file_path = Path(filepath)
+                    if file_path.exists():
+                        print(f"Existing file found: {filepath}. It will be overwritten.")
+                        file_path.unlink()  # Delete the existing file
 
-                    # Increment image number for next capture
-                    self.image_number += 1
+                    # Call external capture_photo function with side as an argument
+                    capture_photo(side.lower())  # Ensure `capture_photo` uses consistent naming
 
                     # Update flags based on which eye was captured
                     if side == "Left":
@@ -410,7 +412,7 @@ class TouchscreenUI:
                     messagebox.showerror("Error", f"Failed to capture {side} eye photo: {str(e)}")
                     self.show_eye_selection_screen()  # Return to selection screen in case of error
 
-        update_countdown(3)  # Start countdown from 5 seconds
+        update_countdown(3)  # Start countdown from 3 seconds
 
     def display_captured_photo(self, filepath):
         """
