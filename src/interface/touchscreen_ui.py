@@ -304,7 +304,7 @@ class TouchscreenUI:
         self._clear_frame()
 
         # Open and set assets
-        bg_image = Image.open(BASE_PATH / "assets/eye select/Eye Selection screen.png")
+        bg_select_eye_image = Image.open(BASE_PATH / "assets/eye select/Eye Selection screen.png")
         back_button_image = Image.open(BASE_PATH / "assets/eye select/Back Button.png")
         submit_button_image = Image.open(BASE_PATH / "assets/eye select/Submit Button.png")
         submit_button_disabled_image = Image.open(BASE_PATH / "assets/eye select/Submit Button disabled.png")
@@ -313,7 +313,7 @@ class TouchscreenUI:
         select_right_eye_image = Image.open(BASE_PATH / "assets/eye select/right eye.png")
         select_right_eye_disabled_image = Image.open(BASE_PATH / "assets/eye select/right eye disabled.png")
 
-        self.bg_photo = ImageTk.PhotoImage(bg_image)
+        self.bg_select_eye_image = ImageTk.PhotoImage(bg_select_eye_image)
         self.back_button_image = ImageTk.PhotoImage(back_button_image)
         self.submit_button_image = ImageTk.PhotoImage(submit_button_image)
         self.submit_button_disabled_image = ImageTk.PhotoImage(submit_button_disabled_image)
@@ -324,7 +324,7 @@ class TouchscreenUI:
 
         # Set Canvas background image
         canvas = tk.Canvas(self.current_frame, width=1280, height=720)
-        canvas.create_image(0, 0, image=self.bg_photo, anchor="nw")
+        canvas.create_image(0, 0, image=self.bg_select_eye_image, anchor="nw")
         canvas.pack(fill="both", expand=True)
 
         # Set start button position and bind
@@ -360,20 +360,19 @@ class TouchscreenUI:
         """
         self._clear_frame()
 
-        # Countdown label
-        countdown_label = tk.Label(
-            self.current_frame,
-            text="Get ready! Capturing photo in:",
-            font=("Helvetica", 18)
-        )
-        countdown_label.pack(pady=20)
+        bg_count_down_image = Image.open(BASE_PATH / "assets/timer screen/Timer Background.png")
+        self.bg_count_down_image = ImageTk.PhotoImage(bg_count_down_image)
 
-        countdown_number_label = tk.Label(self.current_frame, text="5", font=("Helvetica", 36), fg="red")
-        countdown_number_label.pack(pady=20)
+        # Set Canvas background image
+        canvas = tk.Canvas(self.current_frame, width=1280, height=720)
+        canvas.create_image(0, 0, image=self.bg_count_down_image, anchor="nw")
+        canvas.pack(fill="both", expand=True)
+
+        countdown_text_id = canvas.create_text(640, 450, text="5", font=("M Plus 1", 150), fill="white")
 
         def update_countdown(seconds_left):
             if seconds_left > 0:
-                countdown_number_label.config(text=str(seconds_left))
+                canvas.itemconfig(countdown_text_id, text=str(seconds_left))
                 self.current_frame.after(1000, update_countdown, seconds_left - 1)  # Call again after 1 second
             else:
                 # Capture the photo after countdown finishes
