@@ -285,11 +285,49 @@ class TouchscreenUI:
         )
         done_button.place(relx=0.5, rely=0.9, anchor="center")
 
+    def create_button(self, canvas, x, y, img, events):
+        # Set start button position and bind
+        button_x, button_y = 40, 60
+        button = canvas.create_image(x, y, image=img)
+        def on_click(event):
+            events()
+        canvas.tag_bind(button, "<Button-1>", on_click)
+
     def show_eye_selection_screen(self):
         """
         Show the eye selection screen for capturing left and right eye images.
         """
         self._clear_frame()
+
+        # Open and set assets
+        bg_image = Image.open(BASE_PATH / "assets/eye select/Eye Selection screen.png")
+        back_button_image = Image.open(BASE_PATH / "assets/eye select/Back Button.png")
+        submit_button_image = Image.open(BASE_PATH / "assets/eye select/Submit Button.png")
+        select_left_eye_image = Image.open(BASE_PATH / "assets/eye select/left eye.png")
+        select_right_eye_image = Image.open(BASE_PATH / "assets/eye select/right eye.png")
+
+        self.bg_photo = ImageTk.PhotoImage(bg_image)
+        self.back_button_image = ImageTk.PhotoImage(back_button_image)
+        self.submit_button_image = ImageTk.PhotoImage(submit_button_image)
+        self.select_left_eye_image = ImageTk.PhotoImage(select_left_eye_image)
+        self.select_right_eye_image = ImageTk.PhotoImage(select_right_eye_image)
+
+        # Set Canvas background image
+        canvas = tk.Canvas(self.current_frame, width=1280, height=720)
+        canvas.create_image(0, 0, image=self.bg_photo, anchor="nw")
+        canvas.pack(fill="both", expand=True)
+
+        # Set start button position and bind
+        button_x, button_y = 40, 60
+        
+        self.create_button(canvas, button_x, button_y, self.back_button_image, self.show_welcome_screen)
+
+        # Set simulation button position and bind
+        sim_button_x, sim_button_y = 1125, 650
+        canvas_simulation_button = canvas.create_image(sim_button_x, sim_button_y, image=self.simulation_button_photo)
+        def on_simulation_click(event):
+            self.show_simulation_screen()
+        canvas.tag_bind(canvas_simulation_button, "<Button-1>", on_simulation_click)
 
         # Prompt label
         prompt_label = tk.Label(self.current_frame, text="Select which eye to scan:", font=("Helvetica", 18))
