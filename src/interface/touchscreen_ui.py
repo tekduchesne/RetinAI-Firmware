@@ -410,22 +410,23 @@ class TouchscreenUI:
         """
         self._clear_frame()
 
+        # Load background image and convert it to a PhotoImage for Tkinter
+        bg_picture_taken_image = Image.open(BASE_PATH / "assets/picture taken/picture taken.png")
+        self.bg_picture_taken_image = ImageTk.PhotoImage(bg_picture_taken_image)
+
+        # Create a canvas with the desired dimensions
+        canvas = tk.Canvas(self.current_frame, width=1280, height=720)
+        # Place the background image at the top-left corner
+        canvas.create_image(0, 0, image=self.bg_picture_taken_image, anchor="nw")
+        canvas.pack(fill="both", expand=True)
+
         try:
-            # Load and display the captured image
-            img = Image.open(filepath).resize((400, 300))  # Resize for display
-            photo = ImageTk.PhotoImage(img)
+            # Load the captured image and resize it for display
+            img = Image.open(filepath).resize((500, 400))
+            self.captured_photo = ImageTk.PhotoImage(img)
 
-            img_label = tk.Label(self.current_frame, image=photo)
-            img_label.image = photo  # Keep reference to avoid garbage collection
-            img_label.pack(pady=20)
-
-            success_label = tk.Label(
-                self.current_frame,
-                text=f"Photo captured successfully!",
-                font=("Helvetica", 18),
-                fg="green"
-            )
-            success_label.pack(pady=20)
+            # Create the captured photo on the canvas, centered
+            canvas.create_image(655 , 400, image=self.captured_photo, anchor="center")
 
             # Return to eye selection screen after 2 seconds
             self.current_frame.after(2000, self.show_eye_selection_screen)
