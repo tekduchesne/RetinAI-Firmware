@@ -236,20 +236,27 @@ class TouchscreenUI:
 
     def show_results_sim_screen(self, image_filenames, results):
         """
-        Show the results screen with images and their diagnosis results side by side.
+        Show the results screen with images and their diagnosis results side by side
         """
         self._clear_frame()
 
-        # Create a main frame for results
-        main_frame = tk.Frame(self.current_frame, width=1280, height=720)
-        main_frame.pack(expand=True, fill="both")
-        main_frame.grid_propagate(False)
+        # Open and set assets
+        sim_results_bg_image = Image.open(BASE_PATH / "assets/results screen/results background.png")
+        sim_results_finish_image = Image.open(BASE_PATH / "assets/results screen/finish button.png")
 
-        # Create a grid frame for displaying images and results
-        grid_frame = tk.Frame(main_frame)
-        grid_frame.place(relx=0.5, rely=0.4, anchor="center")  # Center it
+        self.sim_background_bg_photo = ImageTk.PhotoImage(sim_results_bg_image)
+        self.sim_finish_photo = ImageTk.PhotoImage(sim_results_finish_image)
 
-        # Display images and their results side by side
+        # Set Canvas background image
+        canvas = tk.Canvas(self.current_frame, width=1280, height=720)
+        canvas.create_image(0, 0, image=self.sim_background_bg_photo, anchor="nw")
+        canvas.pack(fill="both", expand=True)
+
+        # Define positions and dimensions for images and labels
+        image_width, image_height = 350, 350  # Image size
+        padding_x, padding_y = 120, 20  # Padding between elements
+        start_x, start_y = 405, 400  # Starting position for first image
+
         for i, result in enumerate(results):
             filename = result['filename']
             diagnosis = result['diagnosis']
@@ -257,39 +264,36 @@ class TouchscreenUI:
 
             # Load and resize the image
             img_path = Path(self.demo_client.images_dir) / filename
-            img = Image.open(img_path).resize((350, 350))  # Resize for display
+            img = Image.open(img_path).resize((image_width, image_height), Image.Resampling.LANCZOS)
             photo = ImageTk.PhotoImage(img)
 
-            # Create a label for the image
-            img_label = tk.Label(grid_frame, image=photo)
-            img_label.image = photo 
-            img_label.grid(row=0, column=i, padx=20, pady=10)
+            # Calculate position for each image and label
+            x = start_x + i * (image_width + padding_x)
+            y = start_y
 
-            # Create a label for the diagnosis result
+            # Create a button or label for the image directly on the canvas
+            img_label = tk.Label(canvas, image=photo)
+            img_label.image = photo  # Keep a reference to avoid garbage collection
+            canvas.create_window(x, y, window=img_label)
+
+            # Create a label for the diagnosis result below the image
             result_text = (
                 f"Filename: {filename}\n"
                 f"Diagnosis: {diagnosis}\n"
                 f"Correct: {'Yes' if is_correct else 'No'}"
             )
             result_label = tk.Label(
-                grid_frame,
+                canvas,
                 text=result_text,
                 font=("Helvetica", 14),
                 fg="green" if is_correct else "red",
                 justify="left",
+                bg="white"
             )
-            result_label.grid(row=1, column=i, padx=20, pady=10)
+            canvas.create_window(x, y + image_height // 2 + 45, window=result_label)
 
-        # Done button to return to welcome screen
-        done_button = tk.Button(
-            main_frame,
-            text="Done",
-            font=("Helvetica", 16),
-            bg="blue",
-            fg="white",
-            command=self.show_welcome_screen,
-        )
-        done_button.place(relx=0.5, rely=0.9, anchor="center")
+        # Create finish button
+        self.create_button(canvas, 1200, 660, self.sim_finish_photo,self.show_welcome_screen)
 
     def create_button(self, canvas, x, y, img, event_function=None, *args, **kwargs):
         button = canvas.create_image(x, y, image=img)
