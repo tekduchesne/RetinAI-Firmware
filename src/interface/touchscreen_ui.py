@@ -470,47 +470,73 @@ class TouchscreenUI:
         except Exception as e:
             messagebox.showerror("Error", f"An unexpected error occurred:\n{str(e)}")
 
-    def show_results_screen(self, image_paths, results):
+    def show_results_screen(self, results):
         """
-        Display submitted images and their respective diagnosis results.
+        Display submitted images and their respective diagnosis results side by side
         """
         self._clear_frame()
 
-        # Create a grid frame for displaying images and results
-        grid_frame = tk.Frame(self.current_frame)
-        grid_frame.place(relx=0.5, rely=0.4, anchor="center")
+        results_bg_image = Image.open(BASE_PATH / "assets/results screen/results background.png")
+        finish_button_image = Image.open(BASE_PATH / "assets/results screen/finish button.png")
 
-        for i, image_info in enumerate(results["image_Info"]):
-            # Load and display image
-            img_path = os.path.join(imagesLocation, image_info["name"])
-            img = Image.open(img_path).resize((350, 350))  # Resize for display
+        self.results_bg_photo = ImageTk.PhotoImage(results_bg_image)
+        self.finish_button_photo = ImageTk.PhotoImage(finish_button_image)
+
+        # Set Canvas background image
+        canvas = tk.Canvas(self.current_frame, width=1280, height=720)
+        canvas.create_image(0, 0, image=self.results_bg_photo, anchor="nw")
+        canvas.pack(fill="both", expand=True)
+
+        # Define positions and dimensions for images and labels
+        image_width, image_height = 350, 350  # Image size
+        padding_x, padding_y = 120, 20  # Padding between elements
+        start_x, start_y = 405, 400  # Starting position for first image
+
+        # Display first two images from results
+        for i, image_info in enumerate(results["image_Info"][:2]):
+            filename = image_info["name"]
+            eye_side = image_info["eyeSide"]
+            prediction = image_info["prediction"]
+            selected = image_info["selectedForDisp"]
+
+            # Load and resize the image
+            img_path = Path(imagesLocation) / filename
+            img = Image.open(img_path).resize((image_width, image_height), Image.Resampling.LANCZOS)
             photo = ImageTk.PhotoImage(img)
 
-            img_label = tk.Label(grid_frame, image=photo)
-            img_label.image = photo  # Keep reference to avoid garbage collection
-            img_label.grid(row=0, column=i, padx=20, pady=10)
+            # Calculate position for each image and label
+            x = start_x + i * (image_width + padding_x)
+            y = start_y
 
-            # Display result below image
-            result_text = (
-                f"Filename: {image_info['name']}\n"
-                f"Eye Side: {image_info['eyeSide']}\n"
-                f"Cropped: {'Yes' if image_info['cropped'] else 'No'}\n"
-                f"Prediction: {image_info['prediction']}\n"
-                f"Selected for Display: {'Yes' if image_info['selectedForDisp'] else 'No'}"
+            # Create image label directly on canvas
+            img_label = tk.Label(canvas, image=photo)
+            img_label.image = photo
+            canvas.create_window(x, y, window=img_label)
+
+            # Create info label below image
+            result_text = ("")
+            if prediction:
+                result_text = (
+                    f"{filename}\n"
+                    f"Prediction: {prediction}\n"
+                )
+            else:
+                result_text = (
+                    f"{filename}\n"
+                    f"Prediction: Inconclusive\n"
+                )
+            result_label = tk.Label(
+                canvas,
+                text=result_text,
+                font=("Helvetica", 14),
+                fg="black",  # White text color
+                justify="center",
+                bg="white"  # Transparent background
             )
-            result_label = tk.Label(grid_frame, text=result_text, font=("Helvetica", 14), justify="center")
-            result_label.grid(row=1, column=i, padx=20, pady=10)
+            canvas.create_window(x, y + image_height // 2 + 45, window=result_label)
 
-        # Finish button to return to welcome screen
-        finish_button = tk.Button(
-            self.current_frame,
-            text="Finish",
-            font=("Helvetica", 16),
-            command=self.show_welcome_screen,
-            bg="blue",
-            fg="white"
-        )
-        finish_button.place(relx=0.5, rely=0.9, anchor="center")
+        # Create finish button
+        self.create_button(canvas, 1200, 660, self.finish_button_photo, self.show_welcome_screen)
 
     def show_success_screen(self):
         """
