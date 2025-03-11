@@ -17,7 +17,7 @@ retinai-kiosk-firmware/
 │   │   ├── captured_photos/           # Folder for captured photos
 │   │   ├── camera_impl.py             # Functions to control Arducam
 │   │   ├── pwmControl.py              # Functions to control PWM for pi
-│   │   ├── demo_diagnoses.py          # Class to send selected images to the API, get the diagnosis, and compare with true labels
+│   │   ├── demo_diagnoses.py          # Class to send selected images to the API, get and compare diagnosis with true labels
 │   │   ├── demo_test.py               # Demo of DemoClient functionality
 │   │   ├── focus_test.py              # Functions to test Arducam focusing algorithm
 │   │   └── camera_test.py             # Functions to test Arducam camera
