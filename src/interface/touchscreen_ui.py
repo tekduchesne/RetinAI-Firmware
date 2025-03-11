@@ -102,74 +102,80 @@ class TouchscreenUI:
         """
         self._clear_frame()
 
-        # Reset selected images when entering the simulation screen
-        self.selected_images = []  # Clear any previously selected images
+        # Reset selected images
+        self.selected_images = []
 
-        # Load and resize background image
-        sim_bg_path = BASE_PATH / "assets/simulation screen/simulation background.png"  # Path to the background image
-        if not sim_bg_path.exists():
-            messagebox.showerror("Error", f"Background image not found: {sim_bg_path}")
-            return
+        # Open and set assets
+        sim_bg_image = Image.open(BASE_PATH / "assets/simulation screen/simulation background.png")
+        sim_next_image = Image.open(BASE_PATH / "assets/simulation screen/Next button.png")
+        sim_back_image = Image.open(BASE_PATH / "assets/simulation screen/Back Button.png")
+        sim_regresh_image = Image.open(BASE_PATH / "assets/simulation screen/Refresh Button.png")
 
-        sim_bg = Image.open(sim_bg_path).resize((1280, 720))  # Resize to fit screen
-        self.sim_bg = ImageTk.PhotoImage(sim_bg)  # Store reference to avoid garbage collection
+        self.sim_bg_photo = ImageTk.PhotoImage(sim_bg_image)
+        self.sim_next_photo = ImageTk.PhotoImage(sim_next_image)
+        self.sim_back_photo = ImageTk.PhotoImage(sim_back_image)
+        self.sim_refresh_photo = ImageTk.PhotoImage(sim_regresh_image)
 
-        # Add background image as a Label
-        bg_label = tk.Label(self.current_frame, image=self.sim_bg)
-        bg_label.place(x=0, y=0, relwidth=1, relheight=1)  # Cover entire screen
+        # Set Canvas background image
+        canvas = tk.Canvas(self.current_frame, width=1280, height=720)
+        canvas.create_image(0, 0, image=self.sim_bg_photo, anchor="nw")
+        canvas.pack(fill="both", expand=True)
+
+        # Create next, back, and refresh buttons
+        self.create_button(canvas, 1200, 660, self.sim_next_photo,self.submit_selected_images)
+        self.create_button(canvas, 60, 60, self.sim_back_photo,self.show_welcome_screen)
+        self.create_button(canvas, 60, 660, self.sim_refresh_photo,self.show_simulation_screen)
 
         # Define image_dir as a Path object (PiOS)
         # image_dir = Path('/home/RetinAi/Desktop/Embedded/raspi_raw')
         # Define image_dir as a Path object (Windows)
         image_dir = Path('../../Embedded/raspi_raw')
 
+        # Randomly select 6 images from the directory
         try:
-            # Randomly select 6 images from the directory
             image_file_names = random.sample(list(image_dir.glob("*.jpg")), 6)
         except ValueError:
             messagebox.showerror("Error", "Not enough images in the directory!")
             return
 
-        # Create a grid frame for images and center it
-        grid_frame = tk.Frame(self.current_frame, bg="black")  # Transparent-like background
-        grid_frame.place(relx=0.5, rely=0.45, anchor="center")  # Center the grid frame
-
         # Initialize dictionaries to track buttons and their states
         self.image_buttons = {}
 
-        # Display images in a grid (2 rows x 3 columns)
+        # 2x3 Grid placement of random images
+        button_width, button_height = 200, 200  # Button size
+        padding_x, padding_y = 95, 80  # Padding between buttons
+        start_x, start_y = 365, 260  # Starting position
+
         for i, image_file in enumerate(image_file_names):
-            # Create a sub-frame for each image and its label
-            item_frame = tk.Frame(grid_frame)
-            item_frame.grid(row=i // 3, column=i % 3, padx=20, pady=20)
+            # Calculate position for each button in grid
+            row = i // 3
+            col = i % 3
+            x = start_x + col * (button_width + padding_x)
+            y = start_y + row * (button_height + padding_y)
 
             # Load and resize the image
-            img = Image.open(image_file).resize((250, 250))  # Resize for display
+            img = Image.open(image_file).resize((button_width, button_height), Image.Resampling.LANCZOS)
             photo = ImageTk.PhotoImage(img)
 
-            # Create a button for the image
-            btn = tk.Button(item_frame, image=photo,
-                            command=lambda f=image_file: self.select_image(f),
-                            relief="flat", bg="white")
+            # Create a button for the image directly on the canvas
+            btn = tk.Button(
+                canvas,
+                image=photo,
+                command=lambda f=image_file: self.select_image(f),
+                relief="flat", bg="white"
+            )
             btn.image = photo  # Keep a reference to avoid garbage collection
-            btn.pack()  # Pack the button inside the item frame
+
+            # Place the button on the canvas at calculated coordinates
+            canvas.create_window(x, y, window=btn)
 
             # Store the button in the dictionary for later updates
             self.image_buttons[image_file] = btn
 
             # Create a label for the image name and place it below the button
-            label = tk.Label(item_frame, text=image_file.name, font=("Helvetica", 12))
-            label.pack()
-
-        # Submit button (place it below the grid and center it)
-        submit_button = tk.Button(self.current_frame, text="Submit",
-                                command=self.submit_selected_images,
-                                font=("Helvetica", 14), bg="green", fg="white")
-        submit_button.place(relx=0.6, rely=0.95, anchor="center")  # Center it at the bottom of main_frame
-
-        # Back button for returning to welcome screen
-        back_button = tk.Button(self.current_frame, text="Back", font=("Helvetica", 14), command=self.show_welcome_screen)
-        back_button.place(relx=0.4, rely=0.95, anchor="center")
+            label_text = image_file.name if hasattr(image_file, "name") else str(image_file)
+            label = tk.Label(canvas, text=label_text, font=("Helvetica", 12), bg="white")
+            canvas.create_window(x, y + button_height // 2 + 15, window=label)
 
     def select_image(self, image_file):
         """
