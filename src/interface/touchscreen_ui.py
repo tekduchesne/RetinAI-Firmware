@@ -5,14 +5,14 @@ This script creates a simple graphical user interface (GUI) using tkinter.
 The interface is designed for a touchscreen device allowing users to navigate
 between screens, enter information, and interact with the application.
 
-Features: (CHANGED)
+Features:
 - Welcome screen with navigation
 - User input screen for selecting eye
     - Left/Right eye
-- Loading screen for while picture of eye being taken
-- Success screen
-- Failure screen to retake picture of eye
-- Information screen to display results
+- Countdown screen for while picture of eye being taken
+- Results screen
+- Simulation screen to select simulated retinal captures
+- Simulation results screen to view preliminary diagnosis
 """
 from pathlib import Path
 import tkinter as tk
@@ -47,9 +47,9 @@ class TouchscreenUI:
 
         self.selected_images = []
         # For simulation selected images and scanning (PiOS)
-        # self.demo_client = DemoClient(images_dir='/home/RetinAi/Desktop/Embedded/raspi_raw', csv_dir='/home/RetinAi/Desktop/Embedded/test.csv')
+        self.demo_client = DemoClient(images_dir='/home/RetinAi/Desktop/Embedded/raspi_raw', csv_dir='/home/RetinAi/Desktop/Embedded/test.csv')
         # For simulation selected images and scanning (Windows)
-        self.demo_client = DemoClient(images_dir='../../Embedded/raspi_raw', csv_dir='../../Embedded/test.csv')
+        # self.demo_client = DemoClient(images_dir='../../Embedded/raspi_raw', csv_dir='../../Embedded/test.csv')
 
     def start(self):
         """Start the application by showing the welcome screen."""
@@ -65,7 +65,7 @@ class TouchscreenUI:
         self.right_eye_taken = False
 
         # disable fullscreen for testing
-        # self.root.attributes('-fullscreen', True)
+        self.root.attributes('-fullscreen', True)
         self._clear_frame()
 
         # Open and set assets
@@ -127,9 +127,9 @@ class TouchscreenUI:
         self.create_button(canvas, 60, 660, self.sim_refresh_photo,self.show_simulation_screen)
 
         # Define image_dir as a Path object (PiOS)
-        # image_dir = Path('/home/RetinAi/Desktop/Embedded/raspi_raw')
+        image_dir = Path('/home/RetinAi/Desktop/Embedded/raspi_raw')
         # Define image_dir as a Path object (Windows)
-        image_dir = Path('../../Embedded/raspi_raw')
+        # image_dir = Path('../../Embedded/raspi_raw')
 
         # Randomly select 6 images from the directory
         try:
@@ -538,29 +538,29 @@ class TouchscreenUI:
         # Create finish button
         self.create_button(canvas, 1200, 660, self.finish_button_photo, self.show_welcome_screen)
 
-    def show_success_screen(self):
-        """
-        Show success screen if both images have been captured.
-        """
-        self._clear_frame()
+    # def show_success_screen(self):
+    #     """
+    #     Show success screen if both images have been captured.
+    #     """
+    #     self._clear_frame()
 
-        success_label = tk.Label(self.current_frame, text="Both images captured successfully!", font=("Helvetica", 18))
-        success_label.pack(pady=20)
+    #     success_label = tk.Label(self.current_frame, text="Both images captured successfully!", font=("Helvetica", 18))
+    #     success_label.pack(pady=20)
 
-        next_button = tk.Button(self.current_frame, text="View Results", font=("Helvetica", 16), command=self.show_information_screen)
-        next_button.pack(pady=20)
+    #     next_button = tk.Button(self.current_frame, text="View Results", font=("Helvetica", 16), command=self.show_information_screen)
+    #     next_button.pack(pady=20)
 
-    def show_information_screen(self):
-        """
-        Show analysis results screen.
-        """
-        self._clear_frame()
+    # def show_information_screen(self):
+    #     """
+    #     Show analysis results screen.
+    #     """
+    #     self._clear_frame()
 
-        info_label = tk.Label(self.current_frame, text="Analysis Results:\n[Placeholder for results]", font=("Helvetica", 18))
-        info_label.pack(pady=20)
+    #     info_label = tk.Label(self.current_frame, text="Analysis Results:\n[Placeholder for results]", font=("Helvetica", 18))
+    #     info_label.pack(pady=20)
 
-        done_button = tk.Button(self.current_frame, text="Done", font=("Helvetica", 16), command=self.show_welcome_screen)
-        done_button.pack(pady=20)
+    #     done_button = tk.Button(self.current_frame, text="Done", font=("Helvetica", 16), command=self.show_welcome_screen)
+    #     done_button.pack(pady=20)
 
     def _clear_frame(self):
         """
