@@ -1,6 +1,3 @@
-src/interface/__pycache__/touchscreen_ui.cpython-313.pyc
-src/interface/__pycache__/
-src/vision/__pycache__/
-src/network/__pycache__/
+__pycache__
 venv
 data
