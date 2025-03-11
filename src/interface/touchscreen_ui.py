@@ -306,8 +306,8 @@ class TouchscreenUI:
         # Open and set assets
         bg_select_eye_image = Image.open(BASE_PATH / "assets/eye select/Eye Selection screen.png")
         back_button_image = Image.open(BASE_PATH / "assets/eye select/Back Button.png")
-        submit_button_image = Image.open(BASE_PATH / "assets/eye select/Submit Button.png")
-        submit_button_disabled_image = Image.open(BASE_PATH / "assets/eye select/Submit Button disabled.png")
+        submit_button_image = Image.open(BASE_PATH / "assets/eye select/Submit.png")
+        submit_button_disabled_image = Image.open(BASE_PATH / "assets/eye select/Submit.png")
         select_left_eye_image = Image.open(BASE_PATH / "assets/eye select/left eye.png")
         select_left_eye_disabled_image = Image.open(BASE_PATH / "assets/eye select/left eye disabled.png")
         select_right_eye_image = Image.open(BASE_PATH / "assets/eye select/right eye.png")
@@ -331,7 +331,7 @@ class TouchscreenUI:
         back_b_x, back_b_y = 80, 75
         l_b_x, l_b_y = 380, 400
         r_b_x, r_b_y = 900, 400
-        s_b_x, s_b_y = 1200, 675
+        s_b_x, s_b_y = 1200, 650
         
         self.create_button(canvas, back_b_x, back_b_y, self.back_button_image, self.show_welcome_screen)
 
