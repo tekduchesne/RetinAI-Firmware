@@ -285,13 +285,11 @@ class TouchscreenUI:
         )
         done_button.place(relx=0.5, rely=0.9, anchor="center")
 
-    def create_button(self, canvas, x, y, img, events):
-        # Set start button position and bind
-        button_x, button_y = 40, 60
+    def create_button(self, canvas, x, y, img, event_function=None, *args, **kwargs):
         button = canvas.create_image(x, y, image=img)
-        def on_click(event):
-            events()
-        canvas.tag_bind(button, "<Button-1>", on_click)
+        if event_function is not None:
+            canvas.tag_bind(button, "<Button-1>", lambda event: event_function(*args, **kwargs))
+        return button
 
     def show_eye_selection_screen(self):
         """
@@ -303,14 +301,20 @@ class TouchscreenUI:
         bg_image = Image.open(BASE_PATH / "assets/eye select/Eye Selection screen.png")
         back_button_image = Image.open(BASE_PATH / "assets/eye select/Back Button.png")
         submit_button_image = Image.open(BASE_PATH / "assets/eye select/Submit Button.png")
+        submit_button_disabled_image = Image.open(BASE_PATH / "assets/eye select/Submit Button disabled.png")
         select_left_eye_image = Image.open(BASE_PATH / "assets/eye select/left eye.png")
+        select_left_eye_disabled_image = Image.open(BASE_PATH / "assets/eye select/left eye disabled.png")
         select_right_eye_image = Image.open(BASE_PATH / "assets/eye select/right eye.png")
+        select_right_eye_disabled_image = Image.open(BASE_PATH / "assets/eye select/right eye disabled.png")
 
         self.bg_photo = ImageTk.PhotoImage(bg_image)
         self.back_button_image = ImageTk.PhotoImage(back_button_image)
         self.submit_button_image = ImageTk.PhotoImage(submit_button_image)
+        self.submit_button_disabled_image = ImageTk.PhotoImage(submit_button_disabled_image)
         self.select_left_eye_image = ImageTk.PhotoImage(select_left_eye_image)
+        self.select_left_eye_disabled_image = ImageTk.PhotoImage(select_left_eye_disabled_image)
         self.select_right_eye_image = ImageTk.PhotoImage(select_right_eye_image)
+        self.select_right_eye_disabled_image = ImageTk.PhotoImage(select_right_eye_disabled_image)
 
         # Set Canvas background image
         canvas = tk.Canvas(self.current_frame, width=1280, height=720)
@@ -318,73 +322,30 @@ class TouchscreenUI:
         canvas.pack(fill="both", expand=True)
 
         # Set start button position and bind
-        button_x, button_y = 40, 60
+        back_b_x, back_b_y = 80, 75
+        l_b_x, l_b_y = 380, 400
+        r_b_x, r_b_y = 900, 400
+        s_b_x, s_b_y = 1200, 675
         
-        self.create_button(canvas, button_x, button_y, self.back_button_image, self.show_welcome_screen)
-
-        # Set simulation button position and bind
-        sim_button_x, sim_button_y = 1125, 650
-        canvas_simulation_button = canvas.create_image(sim_button_x, sim_button_y, image=self.simulation_button_photo)
-        def on_simulation_click(event):
-            self.show_simulation_screen()
-        canvas.tag_bind(canvas_simulation_button, "<Button-1>", on_simulation_click)
-
-        # Prompt label
-        prompt_label = tk.Label(self.current_frame, text="Select which eye to scan:", font=("Helvetica", 18))
-        prompt_label.pack(pady=20)
+        self.create_button(canvas, back_b_x, back_b_y, self.back_button_image, self.show_welcome_screen)
 
         # Left Eye button
         if not self.left_eye_taken:
-            left_eye_button = tk.Button(
-                self.current_frame,
-                text="Left Eye",
-                font=("Helvetica", 16),
-                command=lambda: self.capture_photo_with_countdown("Left")
-            )
-            left_eye_button.pack(pady=10)
+            self.create_button(canvas, l_b_x, l_b_y, self.select_left_eye_image, self.capture_photo_with_countdown, "Left")
         else:
-            left_eye_button = tk.Button(
-                self.current_frame,
-                text="Left Eye (Complete)",
-                font=("Helvetica", 16),
-                state="disabled",
-                disabledforeground="gray"
-            )
-            left_eye_button.pack(pady=10)
+            self.create_button(canvas, l_b_x, l_b_y, self.select_left_eye_disabled_image)
 
         # Right Eye button
         if not self.right_eye_taken:
-            right_eye_button = tk.Button(
-                self.current_frame,
-                text="Right Eye",
-                font=("Helvetica", 16),
-                command=lambda: self.capture_photo_with_countdown("Right")
-            )
-            right_eye_button.pack(pady=10)
+            self.create_button(canvas, r_b_x, r_b_y, self.select_right_eye_image, self.capture_photo_with_countdown, "Right")
         else:
-            right_eye_button = tk.Button(
-                self.current_frame,
-                text="Right Eye (Complete)",
-                font=("Helvetica", 16),
-                state="disabled",
-                disabledforeground="gray"
-            )
-            right_eye_button.pack(pady=10)
+            self.create_button(canvas, r_b_x, r_b_y, self.select_right_eye_disabled_image)
 
         # Submit button, greyed out until both eyes are captured
-        submit_button_state = "normal" if self.left_eye_taken and self.right_eye_taken else "disabled"
-        submit_button = tk.Button(
-            self.current_frame,
-            text="Submit",
-            font=("Helvetica", 16),
-            state=submit_button_state,
-            command=self.submit_images_and_show_results
-        )
-        submit_button.pack(pady=20)
-
-        # Back button for returning to welcome screen
-        back_button = tk.Button(self.current_frame, text="Back", font=("Helvetica", 16), command=self.show_welcome_screen)
-        back_button.pack(pady=20)
+        if self.left_eye_taken and self.right_eye_taken:
+            self.create_button(canvas, s_b_x, s_b_y, self.submit_button_image, self.submit_images_and_show_results)
+        else:
+            self.create_button(canvas, s_b_x, s_b_y, self.submit_button_disabled_image)
 
     def capture_photo_with_countdown(self, side):
         """
