@@ -1,6 +1,6 @@
 # RetinAI Kiosk Firmware
 This repository contains the kiosk firmware for initiazing hardware components
-and user interface to carry out taking retinal images to be processed in the cloud 
+and user interface to carry out taking retinal images to be processed in the backend 
 
 To run the main interface loop of the kiosk comprising of all of RetinAI's functionality,
 run 'main.py' on the Raspi directly
@@ -10,8 +10,8 @@ python main.py
 
 ## Project Structure:
 
-retinai-kiosk-firmware/
 ```
+retinai-kiosk-firmware/
 ├── src/
 │   ├── vision/
 │   │   ├── captured_photos/           # Folder for captured photos
