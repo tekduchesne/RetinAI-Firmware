@@ -64,52 +64,37 @@ class TouchscreenUI:
         self.left_eye_taken = False
         self.right_eye_taken = False
 
-        # disable for testing
+        # disable fullscreen for testing
         # self.root.attributes('-fullscreen', True)
         self._clear_frame()
 
-        # Load and resize background image
+        # Open and set assets
         bg_image = Image.open(BASE_PATH / "assets/start/Start Screen Background.png")
-        self.bg_photo = ImageTk.PhotoImage(bg_image)
+        start_button_image = Image.open(BASE_PATH / "assets/start/Start Scan Button.png")
+        simulation_button_image = Image.open(BASE_PATH / "assets/start/Simulation Button.png")
 
-        # Create Canvas and set image
+        self.bg_photo = ImageTk.PhotoImage(bg_image)
+        self.start_button_image = ImageTk.PhotoImage(start_button_image)
+        self.simulation_button_photo = ImageTk.PhotoImage(simulation_button_image)
+
+        # Set Canvas background image
         canvas = tk.Canvas(self.current_frame, width=1280, height=720)
         canvas.create_image(0, 0, image=self.bg_photo, anchor="nw")
         canvas.pack(fill="both", expand=True)
 
-        """# Place labels and buttons on top
-        welcome_label = tk.Label(self.current_frame, text="Welcome to the RetinAI Scanning Kiosk",
-                                font=("Helvetica", 18), bg="white", fg="black")
-        welcome_label.place(relx=0.5, rely=0.3, anchor="center")  # Center text"""
-
-        # Load transparent button image
-        start_button_image = Image.open(BASE_PATH / "assets/start/Start Scan Button.png")
-        simulation_button_image = Image.open(BASE_PATH / "assets/start/Simulation Button.png")
-        self.start_button_image = ImageTk.PhotoImage(start_button_image)
-
-        # Create an oval-shaped button using Canvas
-        button_x, button_y = 640, 360  # Center coordinates for the button
-        button_width, button_height = self.start_button_image.width(), self.start_button_image.height()
-
-        # Transparent oval on the canvas
-        canvas.create_oval(button_x - button_width // 2, button_y - button_height // 2,
-                           button_x + button_width // 2, button_y + button_height // 2,
-                           outline="", fill="") 
-
-        # Add the transparent image as a clickable object
+        # Set start button position and bind
+        button_x, button_y = 640, 360
         canvas_button = canvas.create_image(button_x, button_y, image=self.start_button_image)
-        
-        # Bind click event to the canvas image
         def on_click(event):
             self.show_eye_selection_screen()
-        
         canvas.tag_bind(canvas_button, "<Button-1>", on_click)
 
-        # Simulation button (bottom-right corner)
-        simulation_button = tk.Button(self.current_frame, text="Simulation",
-                                      command=self.show_simulation_screen,
-                                      font=("Helvetica", 14), bg="blue", fg="white")
-        simulation_button.place(relx=0.9, rely=0.9, anchor="center")
+        # Set simulation button position and bind
+        sim_button_x, sim_button_y = 1125, 650
+        canvas_simulation_button = canvas.create_image(sim_button_x, sim_button_y, image=self.simulation_button_photo)
+        def on_simulation_click(event):
+            self.show_simulation_screen()
+        canvas.tag_bind(canvas_simulation_button, "<Button-1>", on_simulation_click)
 
     def show_simulation_screen(self):
         """
@@ -529,19 +514,6 @@ class TouchscreenUI:
 
         next_button = tk.Button(self.current_frame, text="View Results", font=("Helvetica", 16), command=self.show_information_screen)
         next_button.pack(pady=20)
-
-    # TODO: use failure screen if image is unsatisfactory and repeat capture
-    # def show_failure_screen(self):
-    #     """
-    #     Show failure screen if image capture fails.
-    #     """
-    #     self._clear_frame()
-
-    #     failure_label = tk.Label(self.current_frame, text="Image capture failed. Please try again.", font=("Helvetica", 18))
-    #     failure_label.pack(pady=20)
-
-    #     retry_button = tk.Button(self.current_frame, text="Retry", font=("Helvetica", 16), command=self.show_eye_selection_screen)
-    #     retry_button.pack(pady=20)
 
     def show_information_screen(self):
         """
