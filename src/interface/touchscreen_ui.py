@@ -457,7 +457,7 @@ class TouchscreenUI:
                 image_paths = [os.path.join(imagesLocation, img) for img in image_files]
                 
                 # Show results screen with images and diagnosis
-                self.show_results_screen(image_paths, results)
+                self.show_results_screen(results)
             else:
                 messagebox.showerror("Error", f"Failed to get results: {response.status_code}")
         
