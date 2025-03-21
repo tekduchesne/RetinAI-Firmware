@@ -4,7 +4,7 @@ import os
 import pandas as pd
 
 class DemoClient:
-    def __init__(self, kiosk_id='A1', request_url='http://3.12.41.57:8000/', images_dir='testImages', csv_dir='csv'):
+    def __init__(self, kiosk_id='A1', request_url='http://18.224.65.5:8000/', images_dir='testImages', csv_dir='csv'):
         """
         Initialize the ApiClient with kiosk_id, API endpoint URL, and images directory.
         """
